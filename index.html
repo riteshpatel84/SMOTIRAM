@@ -2091,7 +2091,7 @@ async function editProduct(id) {
   document.getElementById('new-price').value = p.defaultPrice || '';
   document.getElementById('new-stock').value = p.stock  || '';
   document.getElementById('new-low').value   = p.lowStock || 10;
-  document.getElementById('new-vat').value   = p.vat   || 20;
+  document.getElementById('new-vat').value   = (p.vat === 0 || p.vat > 0) ? p.vat : 20;
   document.getElementById('new-hs').value    = p.hs    || '';
   let hiddenId = document.getElementById('prod-edit-id');
   if(!hiddenId) {
@@ -2319,7 +2319,8 @@ async function saveProduct() {
   const name  = document.getElementById('new-name')?.value?.trim();
   const unit  = document.getElementById('new-unit')?.value || 'pcs';
   const price = parseFloat(document.getElementById('new-price')?.value || 0);
-  const vat   = parseFloat(document.getElementById('new-vat')?.value || 20);
+  const vatRaw = document.getElementById('new-vat')?.value;
+  const vat   = vatRaw !== undefined && vatRaw !== '' ? parseFloat(vatRaw) : 20;
   const stock = parseFloat(document.getElementById('new-stock')?.value || 0);
   const hs    = document.getElementById('new-hs')?.value?.trim() || null;
   const wt    = parseFloat(document.getElementById('new-weight')?.value || 0);
