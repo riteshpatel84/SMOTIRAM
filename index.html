@@ -343,7 +343,7 @@
     <div class="nav-item" onclick="showPage('purchases')">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       Purchase Orders
-      <span class="nav-badge">2</span>
+      <span class="nav-badge" id="po-badge" style="display:none">0</span>
     </div>
     <div class="nav-section">Sales</div>
     <div class="nav-item" onclick="showPage('customers')">
@@ -396,22 +396,22 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Revenue This Month</div>
-          <div class="stat-value">£12,480</div>
+          <div class="stat-value">£0</div>
           <div class="stat-badge stat-up">▲ 8.3% vs last month</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Outstanding Balance</div>
-          <div class="stat-value">£3,240</div>
+          <div class="stat-value">£0</div>
           <div class="stat-sub">4 invoices unpaid</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Stock Items</div>
-          <div class="stat-value">47</div>
+          <div class="stat-value">0</div>
           <div class="stat-sub" style="color:var(--warning)">⚠ 3 low stock</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Stock Value (Landed)</div>
-          <div class="stat-value">£28,650</div>
+          <div class="stat-value">£0</div>
           <div class="stat-sub">At avg landed cost</div>
         </div>
       </div>
@@ -1025,6 +1025,7 @@
         <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:10px;height:10px;background:#15803d;border-radius:2px;display:inline-block"></span>Delivery</span>
         <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:10px;height:10px;background:#7c3aed;border-radius:2px;display:inline-block"></span>PO Expected</span>
         <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:10px;height:10px;background:#0891b2;border-radius:2px;display:inline-block"></span>Reminder</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:10px;height:10px;background:#1e40af;border-radius:2px;display:inline-block"></span>GBP Rate (₹/$)</span>
         <span id="cal-holiday-status" style="font-size:11px;color:var(--text-light);margin-left:auto"></span>
         <button class="btn btn-gold btn-sm" onclick="openAddNote()">+ Add Reminder</button>
       </div>
@@ -1216,8 +1217,14 @@
             <option value="">— Select Supplier —</option>
           </select>
         </div>
-        <div class="form-group"><label>Invoice Currency</label><select id="po-currency"><option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="GBP">GBP (£)</option></select></div>
-        <div class="form-group"><label>Exchange Rate to £1</label><input type="number" id="po-rate" placeholder="107.20" step="0.01"/><div class="field-note">Enter today's rate (₹ or $ per £1)</div></div>
+        <div class="form-group"><label>Invoice Currency</label><select id="po-currency" onchange="onPOCurrencyChange()"><option value="INR">INR (₹)</option><option value="USD">USD ($)</option><option value="GBP">GBP (£)</option></select></div>
+        <div class="form-group">
+          <label>Exchange Rate to £1
+            <button type="button" onclick="autoFillExchangeRate()" style="margin-left:8px;font-size:10px;padding:2px 8px;background:var(--gold);color:var(--navy);border:none;border-radius:4px;cursor:pointer;font-weight:600">↻ Live Rate</button>
+          </label>
+          <input type="number" id="po-rate" placeholder="107.20" step="0.0001"/>
+          <div class="field-note" id="po-rate-note">Click ↻ Live Rate to auto-fill today's rate</div>
+        </div>
       </div>
       <div class="form-row form-row-3">
         <div class="form-group"><label>Order Date</label><input type="date" id="po-order-date"/></div>
@@ -2530,6 +2537,13 @@ async function loadPurchaseOrders() {
 
   PURCHASE_ORDERS = {};
   data.forEach(p => PURCHASE_ORDERS[p.id] = p);
+  // Update sidebar badge with pending PO count
+  const pendingPOs = data.filter(p => ['DRAFT','ORDERED','IN_TRANSIT'].includes(p.status)).length;
+  const poBadge = document.getElementById('po-badge');
+  if(poBadge) {
+    if(pendingPOs > 0) { poBadge.textContent = pendingPOs; poBadge.style.display = 'inline'; }
+    else { poBadge.style.display = 'none'; }
+  }
 
   // Also update dashboard mini PO table
   const dashTbody = document.getElementById('po-table-dash');
@@ -5477,6 +5491,12 @@ async function loadCalendarEvents() {
 }
 
 
+async function renderCalendarWithRates() {
+  const rates = await loadRatesForCalendar(calYear, calMonth);
+  window._calRates = rates;
+  renderCalendar();
+}
+
 function renderCalendar() {
   const title = document.getElementById('cal-title');
   if(title) title.textContent = new Date(calYear, calMonth).toLocaleDateString('en-GB',{month:'long',year:'numeric'});
@@ -5525,6 +5545,14 @@ function renderCalendar() {
       ${events.length>2?`<span style="font-size:9px;background:var(--navy);color:#fff;border-radius:8px;padding:1px 5px">+${events.length}</span>`:''}
     </div>`;
 
+    // Exchange rate pill for this day
+    const dayRates = (window._calRates||{})[dateStr];
+    if(dayRates) {
+      let rateHtml = '';
+      if(dayRates.INR) rateHtml += `₹${dayRates.INR} `;
+      if(dayRates.USD) rateHtml += `$${dayRates.USD}`;
+      if(rateHtml) html += `<div style="font-size:8px;background:#f0f7ff;color:#1e40af;border-radius:3px;padding:1px 4px;margin-bottom:2px;font-family:'DM Mono',monospace;font-weight:600" title="1 GBP = ${rateHtml.trim()}">${rateHtml.trim()}</div>`;
+    }
     if(ukHol) html += `<div style="font-size:9px;background:#dc2626;color:#fff;border-radius:3px;padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${ukHol}">🇬🇧 ${ukHol}</div>`;
     if(indHol) html += `<div style="font-size:9px;background:#f97316;color:#fff;border-radius:3px;padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${indHol}">🇮🇳 ${indHol}</div>`;
 
@@ -5608,13 +5636,13 @@ function calPrev() {
   calMonth--;
   if(calMonth < 0) { calMonth = 11; calYear--; }
   ensureIndiaHolidaysForYear(calYear);
-  renderCalendar();
+  renderCalendarWithRates();
 }
 function calNext() {
   calMonth++;
   if(calMonth > 11) { calMonth = 0; calYear++; }
   ensureIndiaHolidaysForYear(calYear);
-  renderCalendar();
+  renderCalendarWithRates();
 }
 function calToday() {
   calYear  = new Date().getFullYear();
@@ -5694,7 +5722,181 @@ function openAddNoteForDay(dateStr) {
 async function initCalendar() {
   await fetchUKHolidays();
   await loadCalendarEvents();
-  renderCalendar();
+  await renderCalendarWithRates();
+}
+
+
+
+// ═══════════════════════════════════════════════════
+// EXCHANGE RATES ENGINE
+// ═══════════════════════════════════════════════════
+
+let rateCache = {}; // { 'INR:2026-04-24': 107.20, 'USD:2026-04-24': 0.79 }
+
+// Free API — no key needed, updated daily
+const FX_API = 'https://api.frankfurter.app';
+
+async function fetchLiveRate(currency) {
+  if(currency === 'GBP') return 1.0;
+  const today = new Date().toISOString().split('T')[0];
+  const cacheKey = `${currency}:${today}`;
+  if(rateCache[cacheKey]) return rateCache[cacheKey];
+
+  try {
+    // Frankfurter: amount=1 GBP -> currency, we want units of currency per 1 GBP
+    const resp = await fetch(`${FX_API}/latest?from=GBP&to=${currency}`);
+    if(!resp.ok) throw new Error('API error');
+    const data = await resp.json();
+    const rate = data.rates[currency];
+    if(!rate) throw new Error('No rate returned');
+    rateCache[cacheKey] = rate;
+
+    // Save to Supabase for history
+    if(db) {
+      db.from('exchange_rates').upsert({
+        from_currency: currency,
+        to_currency: 'GBP',
+        rate: 1/rate,  // store as: 1 unit currency = X GBP
+        rate_date: today,
+        source: 'FRANKFURTER_API'
+      }, { onConflict: 'from_currency,to_currency,rate_date' }).then(()=>{});
+    }
+    return rate;
+  } catch(e) {
+    console.warn('Exchange rate fetch failed:', e.message);
+    // Fallback to last known rate from DB
+    if(db) {
+      const {data} = await db.from('exchange_rates')
+        .select('rate,rate_date')
+        .eq('from_currency', currency)
+        .eq('to_currency','GBP')
+        .order('rate_date',{ascending:false})
+        .limit(1).single();
+      if(data) {
+        const fallback = 1/data.rate;
+        rateCache[cacheKey] = fallback;
+        showToast(`Using last known rate from ${data.rate_date}`);
+        return fallback;
+      }
+    }
+    return null;
+  }
+}
+
+async function fetchHistoricalRate(currency, dateStr) {
+  if(currency === 'GBP') return 1.0;
+  const cacheKey = `${currency}:${dateStr}`;
+  if(rateCache[cacheKey]) return rateCache[cacheKey];
+
+  try {
+    const resp = await fetch(`${FX_API}/${dateStr}?from=GBP&to=${currency}`);
+    if(!resp.ok) throw new Error('API error');
+    const data = await resp.json();
+    const rate = data.rates[currency];
+    rateCache[cacheKey] = rate;
+    return rate;
+  } catch(e) {
+    return null;
+  }
+}
+
+async function autoFillExchangeRate() {
+  const currency = document.getElementById('po-currency')?.value;
+  if(!currency || currency === 'GBP') {
+    const rateEl = document.getElementById('po-rate');
+    if(rateEl) { rateEl.value = '1'; rateEl.readOnly = true; }
+    return;
+  }
+  const rateEl = document.getElementById('po-rate');
+  const rateNote = document.querySelector('#po-rate + .field-note') ||
+                   document.getElementById('po-rate-note');
+  if(rateEl) {
+    rateEl.readOnly = false;
+    rateEl.value = 'Fetching…';
+  }
+  const rate = await fetchLiveRate(currency);
+  if(rate && rateEl) {
+    rateEl.value = rate.toFixed(4);
+    if(rateNote) rateNote.textContent = `Live rate: 1 GBP = ${rate.toFixed(2)} ${currency} — ${new Date().toLocaleDateString('en-GB')}`;
+    showToast(`Live rate: £1 = ${rate.toFixed(2)} ${currency}`);
+  } else if(rateEl) {
+    rateEl.value = '';
+    if(rateNote) rateNote.textContent = 'Could not fetch live rate — enter manually';
+  }
+}
+
+async function loadRatesForCalendar(year, month) {
+  const currencies = ['INR','USD'];
+  const firstDay = `${year}-${String(month+1).padStart(2,'0')}-01`;
+  const lastDay  = new Date(year, month+1, 0).toISOString().split('T')[0];
+  const today    = new Date().toISOString().split('T')[0];
+  const ratesByDate = {};
+
+  // Step 1: Load from Supabase DB (historical saved rates)
+  if(db) {
+    try {
+      const {data} = await db.from('exchange_rates')
+        .select('from_currency,rate,rate_date')
+        .in('from_currency', currencies)
+        .eq('to_currency','GBP')
+        .gte('rate_date', firstDay)
+        .lte('rate_date', lastDay)
+        .order('rate_date');
+      (data||[]).forEach(r => {
+        if(!ratesByDate[r.rate_date]) ratesByDate[r.rate_date] = {};
+        ratesByDate[r.rate_date][r.from_currency] = (1/r.rate).toFixed(2);
+      });
+    } catch(e) { console.warn('DB rates error:', e); }
+  }
+
+  // Step 2: If viewing current month and today has no rate yet, fetch live from API
+  const currentMonth = new Date().getMonth();
+  const currentYear  = new Date().getFullYear();
+  if(year === currentYear && month === currentMonth && !ratesByDate[today]) {
+    try {
+      const resp = await fetch('https://api.frankfurter.app/latest?from=GBP&to=INR,USD');
+      if(resp.ok) {
+        const data = await resp.json();
+        ratesByDate[today] = {};
+        if(data.rates.INR) ratesByDate[today].INR = data.rates.INR.toFixed(2);
+        if(data.rates.USD) ratesByDate[today].USD = data.rates.USD.toFixed(4);
+        // Save to DB for history
+        if(db) {
+          const saves = [];
+          if(data.rates.INR) saves.push({ from_currency:'INR', to_currency:'GBP', rate: 1/data.rates.INR, rate_date: today, source:'FRANKFURTER_API' });
+          if(data.rates.USD) saves.push({ from_currency:'USD', to_currency:'GBP', rate: 1/data.rates.USD, rate_date: today, source:'FRANKFURTER_API' });
+          if(saves.length) db.from('exchange_rates').upsert(saves, {onConflict:'from_currency,to_currency,rate_date'}).then(()=>{});
+        }
+      }
+    } catch(e) { console.warn('Live rate fetch error:', e); }
+  }
+
+  // Step 3: For past months with no data, try to fetch from Frankfurter historical API
+  // Only do this for dates within the last year (API limitation)
+  const oneYearAgo = new Date(); oneYearAgo.setFullYear(oneYearAgo.getFullYear()-1);
+  const monthDate  = new Date(year, month, 1);
+  if(Object.keys(ratesByDate).length === 0 && monthDate > oneYearAgo) {
+    try {
+      // Fetch the last day of that month as a sample
+      const sampleDate = lastDay <= today ? lastDay : today;
+      const resp = await fetch(`https://api.frankfurter.app/${sampleDate}?from=GBP&to=INR,USD`);
+      if(resp.ok) {
+        const data = await resp.json();
+        const actualDate = data.date;
+        ratesByDate[actualDate] = {};
+        if(data.rates.INR) ratesByDate[actualDate].INR = data.rates.INR.toFixed(2);
+        if(data.rates.USD) ratesByDate[actualDate].USD = data.rates.USD.toFixed(4);
+      }
+    } catch(e) {}
+  }
+
+  return ratesByDate;
+}
+
+
+async function onPOCurrencyChange() {
+  await autoFillExchangeRate();
+  updatePOTotals();
 }
 
 
