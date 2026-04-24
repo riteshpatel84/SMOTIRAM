@@ -1790,7 +1790,7 @@ async function loadProducts() {
         name:         p.name         || '',
         unit:         p.unit         || 'pcs',
         defaultPrice: parseFloat(p.default_sell_price_gbp  || 0),
-        vat:          parseFloat(p.vat_rate                || 20),
+        vat:          (p.vat_rate === 0 || p.vat_rate > 0) ? parseFloat(p.vat_rate) : 20,
         landed:       parseFloat(p.avg_landed_cost_gbp     || 0),
         stock:        parseFloat(p.stock_qty               || 0),
         lowStock:     parseFloat(p.low_stock_threshold     || 10),
@@ -2186,7 +2186,7 @@ function renderProductsTable() {
       <td style="color:${lowStock?'var(--warning)':'var(--text)'};font-weight:${lowStock?'600':'400'}">${p.stock||0} ${p.unit||'pcs'}</td>
       <td class="mono">£${(p.landed||0).toFixed(2)}</td>
       <td class="mono">£${(p.defaultPrice||0).toFixed(2)}</td>
-      <td><span class="badge badge-active">${p.vat||20}%</span></td>
+      <td><span class="badge badge-active">${(p.vat===0||p.vat>0)?p.vat:20}%</span></td>
       <td style="display:flex;gap:6px">
         <button class="btn btn-outline btn-sm prod-edit-btn" data-id="${p.id}">Edit</button>
         <button class="btn btn-danger btn-sm prod-del-btn" data-id="${p.id}" data-name="${safeName}">Delete</button>
@@ -2255,7 +2255,7 @@ async function saveInvoice(status = 'DRAFT') {
     const qty   = parseFloat(document.getElementById(`qty_${lid}`)?.value   || 0);
     const price = parseFloat(document.getElementById(`price_${lid}`)?.value || 0);
     const disc  = parseFloat(document.getElementById(`disc_${lid}`)?.value  || 0);
-    const vat   = PRODUCTS[pid]?.vat || 20;
+    const vat   = (PRODUCTS[pid]?.vat===0||PRODUCTS[pid]?.vat>0)?PRODUCTS[pid].vat:20;
     const lineSub = qty * price * (1 - disc/100);
     const lineVat = lineSub * vat / 100;
     subtotal += lineSub; vatTotal += lineVat;
@@ -2384,7 +2384,7 @@ async function saveProduct() {
     PRODUCTS[data.id] = {
       id: data.id, sku: data.sku, name: data.name, unit: data.unit || 'pcs',
       defaultPrice: parseFloat(data.default_sell_price_gbp || 0),
-      vat:     parseFloat(data.vat_rate || 20),
+      vat:     (data.vat_rate===0||data.vat_rate>0)?parseFloat(data.vat_rate):20,
       landed:  parseFloat(data.avg_landed_cost_gbp || 0),
       stock:   parseFloat(data.stock_qty || 0),
       lowStock:parseFloat(data.low_stock_threshold || 10),
@@ -3002,7 +3002,7 @@ async function downloadPDF() {
     doc.text(String(l.qty), cols[1], y+5);
     doc.text('£'+parseFloat(l.unit_price_gbp||0).toFixed(2), cols[2], y+5);
     doc.text((l.discount_pct||0)+'%', cols[3], y+5);
-    doc.text((l.vat_rate||20)+'%', cols[4], y+5);
+    doc.text(((l.vat_rate===0||l.vat_rate>0)?l.vat_rate:20)+'%', cols[4], y+5);
     doc.text('£'+total, W-M-2, y+5, {align:'right'});
     y += 7;
   });
@@ -3122,7 +3122,7 @@ function addEditLine(prefill) {
   const qty   = prefill ? prefill.qty : 1;
   const price = prefill ? parseFloat(prefill.unit_price_gbp||0).toFixed(2) : '';
   const disc  = prefill ? (prefill.discount_pct||0) : 0;
-  const vat   = prefill ? (prefill.vat_rate||20) : 20;
+  const vat   = prefill ? ((prefill.vat_rate===0||prefill.vat_rate>0)?prefill.vat_rate:20) : 20;
   const pid   = prefill ? (prefill.product_id||'') : '';
   div.innerHTML = `
     <input value="${name}" id="eln_${id}" placeholder="Product / description" style="font-size:13px" oninput="recalcEditLine('${id}')"/>
@@ -3143,7 +3143,7 @@ function recalcEditLine(id) {
   const qty   = parseFloat(document.getElementById('elq_'+id)?.value||0);
   const price = parseFloat(document.getElementById('elp_'+id)?.value||0);
   const disc  = parseFloat(document.getElementById('eld_'+id)?.value||0);
-  const vat   = parseFloat(document.getElementById('elv_'+id)?.value||20);
+  const vat   = (v=>v!==''&&v!==null?parseFloat(v):20)(document.getElementById('elv_'+id)?.value);
   const sub   = qty * price * (1 - disc/100);
   const total = sub * (1 + vat/100);
   const el = document.getElementById('elt_'+id);
@@ -3158,7 +3158,7 @@ function recalcEditTotals() {
     const qty   = parseFloat(document.getElementById('elq_'+id)?.value||0);
     const price = parseFloat(document.getElementById('elp_'+id)?.value||0);
     const disc  = parseFloat(document.getElementById('eld_'+id)?.value||0);
-    const vat   = parseFloat(document.getElementById('elv_'+id)?.value||20);
+    const vat   = (v=>v!==''&&v!==null?parseFloat(v):20)(document.getElementById('elv_'+id)?.value);
     const lineSub = qty * price * (1-disc/100);
     sub += lineSub; vatAmt += lineSub * vat/100;
   });
@@ -3198,7 +3198,7 @@ async function saveInvoiceEdit() {
     const qty   = parseFloat(document.getElementById('elq_'+lid)?.value||0);
     const price = parseFloat(document.getElementById('elp_'+lid)?.value||0);
     const disc  = parseFloat(document.getElementById('eld_'+lid)?.value||0);
-    const vat   = parseFloat(document.getElementById('elv_'+lid)?.value||20);
+    const vat   = (v=>v!==''&&v!==null?parseFloat(v):20)(document.getElementById('elv_'+lid)?.value);
     const name  = document.getElementById('eln_'+lid)?.value||'';
     const pid   = document.getElementById('elpid_'+lid)?.value||null;
     const lineSub = qty * price * (1-disc/100);
@@ -3347,7 +3347,7 @@ function addQILine(prefill) {
   const name  = prefill ? (prefill.description||prefill.products?.name||'') : '';
   const qty   = prefill ? prefill.qty : 1;
   const price = prefill ? parseFloat(prefill.unit_price_gbp||0).toFixed(2) : '';
-  const vat   = prefill ? (prefill.vat_rate||20) : 20;
+  const vat   = prefill ? ((prefill.vat_rate===0||prefill.vat_rate>0)?prefill.vat_rate:20) : 20;
   const pid   = prefill ? (prefill.product_id||'') : '';
   const div = document.createElement('div');
   div.id = 'qiwrap_'+id;
@@ -3368,7 +3368,7 @@ function addQILine(prefill) {
 function recalcQILine(id) {
   const qty   = parseFloat(document.getElementById('qiq_'+id)?.value||0);
   const price = parseFloat(document.getElementById('qip_'+id)?.value||0);
-  const vat   = parseFloat(document.getElementById('qiv_'+id)?.value||20);
+  const vat   = (v=>v!==''&&v!==null?parseFloat(v):20)(document.getElementById('qiv_'+id)?.value);
   const total = qty * price * (1 + vat/100);
   const el = document.getElementById('qit_'+id);
   if(el) el.textContent = '£'+total.toFixed(2);
@@ -3381,7 +3381,7 @@ function recalcQITotals() {
     const id = row.id.replace('qiwrap_','');
     const qty   = parseFloat(document.getElementById('qiq_'+id)?.value||0);
     const price = parseFloat(document.getElementById('qip_'+id)?.value||0);
-    const vat   = parseFloat(document.getElementById('qiv_'+id)?.value||20);
+    const vat   = (v=>v!==''&&v!==null?parseFloat(v):20)(document.getElementById('qiv_'+id)?.value);
     sub += qty*price; vatAmt += qty*price*vat/100;
   });
   document.getElementById('qi-sub').textContent   = '£'+sub.toFixed(2);
@@ -3401,7 +3401,7 @@ async function saveQuickInvoice() {
     const id    = row.id.replace('qiwrap_','');
     const qty   = parseFloat(document.getElementById('qiq_'+id)?.value||0);
     const price = parseFloat(document.getElementById('qip_'+id)?.value||0);
-    const vat   = parseFloat(document.getElementById('qiv_'+id)?.value||20);
+    const vat   = (v=>v!==''&&v!==null?parseFloat(v):20)(document.getElementById('qiv_'+id)?.value);
     const pid   = document.getElementById('qipid_'+id)?.value||null;
     // Get description — first text input in the row
     const nameInput = row.querySelector('input[type="text"], input:not([type="number"]):not([type="hidden"])');
@@ -3563,7 +3563,7 @@ function renderInvoicePreview(inv, lines) {
                 <td>${l.qty}</td>
                 <td class="mono">£${parseFloat(l.unit_price_gbp||0).toFixed(2)}</td>
                 <td>${l.discount_pct > 0 ? l.discount_pct+'%' : '—'}</td>
-                <td>${l.vat_rate||20}%</td>
+                <td>${(l.vat_rate===0||l.vat_rate>0)?l.vat_rate:20}%</td>
                 <td class="mono" style="text-align:right">£${parseFloat(l.line_total_gbp||0).toFixed(2)}</td>
               </tr>`).join('')}
           </tbody>
@@ -4022,7 +4022,7 @@ function recalcLine(lineId) {
   const disc  = parseFloat(document.getElementById(`disc_${lineId}`)?.value  || 0);
   const wrap  = document.querySelector(`[data-line-id="${lineId}"]`);
   const pid   = wrap?.dataset.product;
-  const vat   = PRODUCTS[pid]?.vat || 20;
+  const vat   = (PRODUCTS[pid]?.vat===0||PRODUCTS[pid]?.vat>0)?PRODUCTS[pid].vat:20;
 
   const sub   = qty * price * (1 - disc/100);
   const total = sub * (1 + vat/100);
@@ -4045,7 +4045,7 @@ function updateTotals() {
     const price = parseFloat(document.getElementById(`price_${lineId}`)?.value || 0);
     const disc  = parseFloat(document.getElementById(`disc_${lineId}`)?.value  || 0);
     const pid   = row.dataset.product;
-    const vatR  = PRODUCTS[pid]?.vat || 20;
+    const vatR  = (PRODUCTS[pid]?.vat===0||PRODUCTS[pid]?.vat>0)?PRODUCTS[pid].vat:20;
     const lineSub = qty * price * (1 - disc/100);
     sub += lineSub;
     vat += lineSub * vatR / 100;
