@@ -407,7 +407,7 @@
         <div class="stat-card">
           <div class="stat-label">Stock Items</div>
           <div class="stat-value">0</div>
-          <div class="stat-sub" style="color:var(--warning)">⚠ 3 low stock</div>
+          <div class="stat-sub" id="low-stock-count" style="color:var(--warning)"></div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Stock Value (Landed)</div>
@@ -459,16 +459,10 @@
         <div class="card">
           <div class="card-header"><div class="card-title">Low Stock Alerts</div></div>
           <div class="card-body">
-            <div class="alert alert-warning">
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-              <div>
-                <strong>Silk Fabric (Blue)</strong> — 3 pcs remaining<br>
-                <strong>Cotton Kurta Set (M)</strong> — 5 pcs remaining<br>
-                <strong>Embroidered Dupatta</strong> — 2 pcs remaining
-              </div>
-            </div>
+            <div id="low-stock-alerts"><span style="color:var(--text-light);font-size:13px">Loading…</span></div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -497,7 +491,7 @@
           <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           <input type="text" id="product-search" placeholder="Search by name, SKU or barcode…" oninput="filterProducts(this.value)"/>
         </div>
-        <select style="width:160px"><option>All Categories</option><option>Textiles</option><option>Clothing</option><option>Accessories</option></select>
+        <select id="prod-cat-filter" style="width:160px" onchange="filterProductsByCategory(this.value)"><option value="">All Categories</option></select>
         <select style="width:140px"><option>All Stock</option><option>In Stock</option><option>Low Stock</option><option>Out of Stock</option></select>
       </div>
       <div class="card">
@@ -619,264 +613,43 @@
 
   <!-- ANALYTICS -->
   <div id="page-analytics" class="page" style="display:none">
-    <div class="topbar"><div class="topbar-title">Analytics & Reports</div></div>
+    <div class="topbar"><div class="topbar-title">Analytics &amp; Reports</div></div>
     <div class="content">
       <div class="tabs">
-        <div class="tab active" onclick="switchTab(this,'tab-products')">Products</div>
-        <div class="tab" onclick="switchTab(this,'tab-customers')">Customers</div>
-        <div class="tab" onclick="switchTab(this,'tab-suppliers')">Suppliers</div>
-        <div class="tab" onclick="switchTab(this,'tab-receivables')">Aged Receivables</div>
+        <div class="tab active" onclick="switchTab(this,'tab-products');loadProductAnalytics()">Products</div>
+        <div class="tab" onclick="switchTab(this,'tab-customers');loadCustomerAnalytics()">Customers</div>
+        <div class="tab" onclick="switchTab(this,'tab-receivables');loadReceivables()">Aged Receivables</div>
       </div>
-
       <div id="tab-products" style="display:block">
         <div class="card">
           <div class="card-header"><div class="card-title">Product Performance</div></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Product</th><th>Total Sold</th><th>Revenue</th><th>Avg Sell Price</th><th>Avg Landed Cost</th><th>Gross Margin</th><th>Stock On Hand</th></tr></thead>
-              <tbody>
-                <tr>
-                  <td><strong>Banarasi Saree — Red</strong></td>
-                  <td class="mono">48 pcs</td><td class="mono">£3,600</td><td class="mono">£75.00</td><td class="mono">£32.10</td>
-                  <td><strong style="color:var(--success)">57.2%</strong></td><td class="mono">24 pcs</td>
-                </tr>
-                <tr>
-                  <td><strong>Lehenga Set — Bridal</strong></td>
-                  <td class="mono">18 pcs</td><td class="mono">£2,160</td><td class="mono">£120.00</td><td class="mono">£48.20</td>
-                  <td><strong style="color:var(--success)">59.8%</strong></td><td class="mono">12 pcs</td>
-                </tr>
-                <tr>
-                  <td><strong>Cotton Kurta Set — M</strong></td>
-                  <td class="mono">32 pcs</td><td class="mono">£896</td><td class="mono">£28.00</td><td class="mono">£12.30</td>
-                  <td><strong style="color:var(--success)">56.1%</strong></td><td class="mono">5 pcs</td>
-                </tr>
-                <tr>
-                  <td><strong>Silk Fabric — Blue</strong></td>
-                  <td class="mono">42 m</td><td class="mono">£756</td><td class="mono">£18.00</td><td class="mono">£8.40</td>
-                  <td><strong style="color:var(--success)">53.3%</strong></td><td class="mono" style="color:var(--warning)">3 m</td>
-                </tr>
-                <tr>
-                  <td><strong>Embroidered Dupatta</strong></td>
-                  <td class="mono">28 pcs</td><td class="mono">£420</td><td class="mono">£15.00</td><td class="mono">£6.80</td>
-                  <td><strong style="color:var(--success)">54.7%</strong></td><td class="mono" style="color:var(--warning)">2 pcs</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Buy Price</th><th>Sell Price</th><th>VAT</th><th>Stock Value</th></tr></thead>
+            <tbody id="analytics-products-body"><tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-light)">Loading…</td></tr></tbody>
+          </table></div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-header"><div class="card-title">Low Stock Alerts</div></div>
+          <div id="analytics-low-stock" style="padding:16px;color:var(--text-light)">Loading…</div>
         </div>
       </div>
-
       <div id="tab-customers" style="display:none">
-        <div class="card">
-          <div class="card-header"><div class="card-title">Customer Buying Analysis</div></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Customer</th><th>Invoices</th><th>Total Spend</th><th>Avg Order Value</th><th>Last Purchase</th><th>Balance Due</th><th>Top Product</th></tr></thead>
-              <tbody>
-                <tr><td><strong>Patel Wholesale</strong></td><td class="mono">24</td><td class="mono">£41,200</td><td class="mono">£1,717</td><td class="mono">15 Apr 2026</td><td class="mono" style="color:var(--warning)">£3,120</td><td>Lehenga Set</td></tr>
-                <tr><td><strong>Raj Stores Ltd</strong></td><td class="mono">18</td><td class="mono">£24,800</td><td class="mono">£1,378</td><td class="mono">20 Apr 2026</td><td class="mono" style="color:var(--success)">£0</td><td>Banarasi Saree</td></tr>
-                <tr><td><strong>Eastern Traders</strong></td><td class="mono">9</td><td class="mono">£8,400</td><td class="mono">£933</td><td class="mono">23 Mar 2026</td><td class="mono" style="color:var(--danger)">£890.50</td><td>Cotton Kurta</td></tr>
-                <tr><td><strong>London Bazaar</strong></td><td class="mono">6</td><td class="mono">£4,200</td><td class="mono">£700</td><td class="mono">1 Apr 2026</td><td class="mono" style="color:var(--warning)">£240</td><td>Silk Fabric</td></tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="card"><div class="card-header"><div class="card-title">Customer Analysis</div></div>
+          <div id="analytics-customers-body" style="padding:16px;color:var(--text-light)">Click tab to load</div>
         </div>
       </div>
-
-      <div id="tab-suppliers" style="display:none">
-        <div class="card">
-          <div class="card-header"><div class="card-title">Supplier Performance</div></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Supplier</th><th>Orders</th><th>Product Cost (GBP)</th><th>Total Landed Cost</th><th>Avg Uplift %</th><th>Avg Exchange Rate</th><th>Last Order</th></tr></thead>
-              <tbody>
-                <tr><td><strong>Anand Textiles</strong></td><td class="mono">8</td><td class="mono">£16,800</td><td class="mono">£18,420</td><td style="color:var(--warning)"><strong>9.6%</strong></td><td class="mono">₹107.2 / £1</td><td class="mono">10 Apr 2026</td></tr>
-                <tr><td><strong>Mumbai Exports</strong></td><td class="mono">5</td><td class="mono">£8,600</td><td class="mono">£9,840</td><td style="color:var(--warning)"><strong>14.4%</strong></td><td class="mono">$1.27 / £1</td><td class="mono">2 Apr 2026</td></tr>
-                <tr><td><strong>Jaipur Craft House</strong></td><td class="mono">4</td><td class="mono">£5,500</td><td class="mono">£6,200</td><td style="color:var(--success)"><strong>12.7%</strong></td><td class="mono">₹106.8 / £1</td><td class="mono">18 Mar 2026</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
       <div id="tab-receivables" style="display:none">
-        <div class="stats-grid" style="margin-bottom:16px">
-          <div class="stat-card"><div class="stat-label">Current</div><div class="stat-value" style="font-size:20px;color:var(--success)">£3,120</div></div>
-          <div class="stat-card"><div class="stat-label">1–30 Days</div><div class="stat-value" style="font-size:20px;color:var(--warning)">£240</div></div>
-          <div class="stat-card"><div class="stat-label">31–60 Days</div><div class="stat-value" style="font-size:20px;color:var(--danger)">£890.50</div></div>
-          <div class="stat-card"><div class="stat-label">60+ Days</div><div class="stat-value" style="font-size:20px;color:var(--danger)">£0</div></div>
-        </div>
-        <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Invoice</th><th>Customer</th><th>Invoice Date</th><th>Due Date</th><th>Days Overdue</th><th>Balance Due</th><th>Bucket</th></tr></thead>
-              <tbody>
-                <tr><td class="mono">INV-1010</td><td>Patel Wholesale</td><td class="mono">15 Apr 2026</td><td class="mono">15 May 2026</td><td class="mono" style="color:var(--success)">Not due</td><td class="mono">£3,120</td><td><span class="badge badge-active">Current</span></td></tr>
-                <tr><td class="mono">INV-1009</td><td>London Bazaar</td><td class="mono">1 Apr 2026</td><td class="mono">1 May 2026</td><td class="mono" style="color:var(--warning)">Not due</td><td class="mono">£240</td><td><span class="badge badge-draft">Current</span></td></tr>
-                <tr><td class="mono">INV-1011</td><td>Eastern Traders</td><td class="mono">23 Mar 2026</td><td class="mono">22 Apr 2026</td><td class="mono" style="color:var(--danger)">1 day</td><td class="mono">£890.50</td><td><span class="badge badge-overdue">Overdue</span></td></tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="card"><div class="card-header"><div class="card-title">Aged Receivables</div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Customer</th><th>Invoice</th><th>Date</th><th>Due</th><th>Amount</th><th>Overdue</th><th>Status</th></tr></thead>
+            <tbody id="analytics-receivables-body"><tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-light)">Click tab to load</td></tr></tbody>
+          </table></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- SETTINGS -->
-  <div id="page-settings" class="page" style="display:none">
-    <div class="topbar"><div class="topbar-title">Settings</div>
-      <div class="topbar-actions"><button class="btn btn-gold" onclick="saveSettings()">Save Changes</button></div>
-    </div>
-    <div class="content">
-      <div class="tabs">
-        <div class="tab active" onclick="switchTab(this,'stab-company')">Company</div>
-        <div class="tab" onclick="switchTab(this,'stab-pricing')">Price Tiers</div>
-        <div class="tab" onclick="switchTab(this,'stab-vat')">VAT & Tax</div>
-        <div class="tab" onclick="switchTab(this,'stab-users')">Users</div>
-      </div>
-
-      <div id="stab-company" style="display:block">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Company Logo</div></div>
-            <div class="card-body">
-              <div class="logo-upload-area" onclick="document.getElementById('logo-file').click()">
-                <img id="logo-preview-img" class="logo-preview" src="" style="display:block;max-width:200px;max-height:100px;margin:0 auto"/>
-                <div id="logo-placeholder-text" style="display:none">
-                  <svg width="32" height="32" fill="none" stroke="var(--gold)" viewBox="0 0 24 24" style="margin:0 auto 8px"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                  <div style="font-size:14px;font-weight:600;color:var(--navy)">Click to upload logo</div>
-                  <div style="font-size:12px;color:var(--text-light);margin-top:4px">PNG, JPG up to 2MB — appears on all invoices</div>
-                </div>
-                <div style="font-size:11px;color:var(--text-light);margin-top:8px;text-align:center">Click to replace logo</div>
-              </div>
-              <input type="file" id="logo-file" accept="image/*" style="display:none" onchange="previewLogo(event)"/>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Company Details</div></div>
-            <div class="card-body">
-              <div class="form-group"><label>Company Name</label><input id="set-company-name" value="S.MOTIRAM (UK) LIMITED"/></div>
-              <div class="form-group"><label>Company Number</label><input value="14812777"/></div>
-              <div class="form-group"><label>VAT Number</label><input id="set-vat-num" placeholder="GB123456789"/></div>
-              <div class="form-row form-row-2">
-                <div class="form-group"><label>Phone</label><input id="set-phone" placeholder="+44 20 XXXX XXXX"/></div>
-                <div class="form-group"><label>Email</label><input id="set-email" placeholder="info@smotiram.co.uk"/></div>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Registered Address</div></div>
-            <div class="card-body">
-              <div class="form-group"><label>Address Line 1</label><input value="251 Greenford Road"/></div>
-              <div class="form-group"><label>Address Line 2</label><input value="Greenford"/></div>
-              <div class="form-row form-row-2">
-                <div class="form-group"><label>City</label><input value="England"/></div>
-                <div class="form-group"><label>Postcode</label><input value="UB6 8QZ"/></div>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Invoice Settings</div></div>
-            <div class="card-body">
-              <div class="form-row form-row-2">
-                <div class="form-group"><label>Invoice Prefix</label><input id="set-inv-prefix" value="INV-"/></div>
-                <div class="form-group"><label>Next Invoice Number</label><input id="set-inv-next" type="number" value="1013"/></div>
-              </div>
-              <div class="form-row form-row-2">
-                <div class="form-group"><label>PO Prefix</label><input id="set-po-prefix" value="PO-"/></div>
-                <div class="form-group"><label>Next PO Number</label><input id="set-po-next" type="number" value="1009"/></div>
-              </div>
-              <div class="form-row form-row-2">
-                <div class="form-group"><label>Default Payment Terms (days)</label><input id="set-terms" type="number" value="30"/></div>
-                <div class="form-group"><label>Default Currency</label><select id="set-currency"><option value="GBP">GBP (£)</option><option value="USD">USD ($)</option><option value="INR">INR (₹)</option></select></div>
-              </div>
-              <div class="form-group" style="margin-top:8px"><label>Default Payment Methods Accepted</label>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
-                  <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" id="pm-bacs" checked/> <span class="pay-mode pay-bacs">BACS</span></label>
-                  <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" id="pm-cash" checked/> <span class="pay-mode pay-cash">Cash</span></label>
-                  <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" id="pm-cheque" checked/> <span class="pay-mode pay-cheque">Cheque</span></label>
-                  <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" id="pm-card"/> <span class="pay-mode pay-card">Card</span></label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="card" style="grid-column:1/-1">
-            <div class="card-header"><div class="card-title">Bank Account Details</div><span style="font-size:12px;color:var(--text-light)">Printed on all invoices</span></div>
-            <div class="card-body">
-              <div class="form-row form-row-3">
-                <div class="form-group"><label>Account Name</label><input id="set-bank-name" placeholder="S.MOTIRAM (UK) LIMITED"/></div>
-                <div class="form-group"><label>Sort Code</label><input id="set-sort-code" placeholder="XX-XX-XX"/></div>
-                <div class="form-group"><label>Account Number</label><input id="set-account-no" placeholder="XXXXXXXX"/></div>
-              </div>
-              <div class="form-row form-row-3">
-                <div class="form-group"><label>Bank Name</label><input id="set-bank-bankname" placeholder="e.g. Barclays, HSBC, Lloyds"/></div>
-                <div class="form-group"><label>IBAN (optional)</label><input id="set-iban" placeholder="GB00 XXXX 0000 0000 0000 00"/></div>
-                <div class="form-group"><label>Reference Instructions</label><input id="set-pay-ref" placeholder="e.g. Please quote invoice number"/></div>
-              </div>
-              <div id="bank-preview" style="background:var(--navy);color:#fff;border-radius:8px;padding:12px 16px;margin-top:8px;font-size:12px;line-height:1.9">
-                <span style="color:var(--gold-light);font-weight:600">Payment Details: </span>
-                S.MOTIRAM (UK) LIMITED · Sort Code: <span id="bp-sort">XX-XX-XX</span> · Account: <span id="bp-acc">XXXXXXXX</span> · Please quote invoice number
-              </div>
-              <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="saveSettings()">Save Bank Details</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="stab-pricing" style="display:none">
-        <div class="card">
-          <div class="card-header"><div class="card-title">Price Tiers</div><button class="btn btn-outline btn-sm">+ Add Tier</button></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Tier Name</th><th>Description</th><th>Default Discount</th><th>Customers</th><th></th></tr></thead>
-              <tbody>
-                <tr><td><strong>Retail</strong></td><td>Standard retail pricing</td><td>0%</td><td>2</td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
-                <tr><td><strong>Wholesale</strong></td><td>Bulk wholesale rates</td><td>0%</td><td>1</td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
-                <tr><td><strong>Trade</strong></td><td>Trade customer pricing</td><td>0%</td><td>1</td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
-                <tr><td><strong>VIP</strong></td><td>Preferred customer rates</td><td>0%</td><td>1</td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div id="stab-vat" style="display:none">
-        <div class="card">
-          <div class="card-header"><div class="card-title">VAT Configuration</div></div>
-          <div class="card-body">
-            <div class="form-row form-row-3">
-              <div class="form-group"><label>Standard Rate</label><div class="input-prefix"><span>%</span><input type="number" value="20"/></div></div>
-              <div class="form-group"><label>Reduced Rate</label><div class="input-prefix"><span>%</span><input type="number" value="5"/></div></div>
-              <div class="form-group"><label>Zero Rate</label><div class="input-prefix"><span>%</span><input type="number" value="0" disabled/></div></div>
-            </div>
-            <div class="alert alert-info">
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              VAT is applied per product line on invoices. Customers marked as VAT-registered will have their VAT number shown on invoices.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="stab-users" style="display:none">
-        <div class="card">
-          <div class="card-header"><div class="card-title">System Users</div><button class="btn btn-outline btn-sm">+ Add User</button></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last Login</th><th></th></tr></thead>
-              <tbody>
-                <tr><td><strong>Admin User</strong></td><td>admin@smotiram.co.uk</td><td><span class="badge badge-active">Admin</span></td><td class="mono">Today 09:14</td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
-                <tr><td><strong>Staff User</strong></td><td>staff@smotiram.co.uk</td><td><span class="badge badge-draft">Staff</span></td><td class="mono">Yesterday</td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ACCOUNTS EXPORT -->
-  <div id="page-accounts" class="page" style="display:none">
+<div id="page-accounts" class="page" style="display:none">
     <div class="topbar">
       <div class="topbar-title">Accounts Export</div>
       <div class="topbar-actions">
@@ -1082,6 +855,98 @@
     </div>
   </div>
 
+
+  <!-- SETTINGS -->
+  <div id="page-settings" class="page" style="display:none">
+    <div class="topbar"><div class="topbar-title">Settings</div></div>
+    <div class="content">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab(this,'stab-company')">Company</div>
+        <div class="tab" onclick="switchTab(this,'stab-pricing')">Price Tiers</div>
+        <div class="tab" onclick="switchTab(this,'stab-vat')">VAT &amp; Tax</div>
+        <div class="tab" onclick="switchTab(this,'stab-users')">Bank &amp; Payment</div>
+      </div>
+      <div id="stab-company">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Company Details</div>
+            <button class="btn btn-gold btn-sm" onclick="saveSettings()">Save</button></div>
+          <div class="card-body">
+            <div class="form-row form-row-2">
+              <div class="form-group"><label>Company Name</label><input id="set-company-name" value="S MOTIRAM (UK) LTD"/></div>
+              <div class="form-group"><label>Company No.</label><input id="set-company-no" value="14812777"/></div>
+            </div>
+            <div class="form-row form-row-2">
+              <div class="form-group"><label>VAT Number</label><input id="set-vat-num" placeholder="GB123456789"/></div>
+              <div class="form-group"><label>Email</label><input id="set-email" placeholder="info@smotiram.co.uk"/></div>
+            </div>
+            <div class="form-row form-row-2">
+              <div class="form-group"><label>Invoice Prefix</label><input id="set-inv-prefix" value="INV-"/></div>
+              <div class="form-group"><label>Next Invoice No.</label><input type="number" id="set-inv-next" value="1001"/></div>
+            </div>
+            <div class="form-row form-row-2">
+              <div class="form-group"><label>PO Prefix</label><input id="set-po-prefix" value="PO-"/></div>
+              <div class="form-group"><label>Next PO No.</label><input type="number" id="set-po-next" value="1001"/></div>
+            </div>
+            <div class="form-group"><label>Payment Reference</label><input id="set-pay-ref" value="Please quote invoice number"/></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-header"><div class="card-title">Company Logo</div></div>
+          <div class="card-body" style="text-align:center">
+            <img id="logo-preview-img" src="" style="max-width:200px;max-height:100px;margin:0 auto;display:block;cursor:pointer" onclick="document.getElementById('logo-file').click()"/>
+            <div style="font-size:12px;color:var(--text-light);margin-top:8px">Click to replace logo</div>
+            <input type="file" id="logo-file" accept="image/*" style="display:none" onchange="handleLogoUpload(event)"/>
+          </div>
+        </div>
+      </div>
+      <div id="stab-pricing" style="display:none">
+        <div class="card"><div class="card-header"><div class="card-title">Customer Price Tiers</div></div>
+          <div class="card-body"><div class="table-wrap"><table><thead><tr><th>Tier</th><th>Description</th></tr></thead><tbody>
+            <tr><td><strong>Retail</strong></td><td>Standard customers — full retail price</td></tr>
+            <tr><td><strong>Wholesale</strong></td><td>Bulk buying accounts</td></tr>
+            <tr><td><strong>Trade</strong></td><td>Trade or business customers</td></tr>
+            <tr><td><strong>VIP</strong></td><td>High-volume accounts — best price</td></tr>
+          </tbody></table></div></div>
+        </div>
+      </div>
+      <div id="stab-vat" style="display:none">
+        <div class="card"><div class="card-header"><div class="card-title">VAT Configuration</div></div>
+          <div class="card-body">
+            <div class="form-row form-row-2">
+              <div class="form-group"><label>Default VAT</label>
+                <select id="set-default-vat"><option value="20">20% Standard</option><option value="0">0% Zero Rated</option><option value="5">5% Reduced</option></select>
+              </div>
+              <div class="form-group"><label>VAT Number</label><input id="set-vat-reg" placeholder="GB 000 0000 00"/></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="stab-users" style="display:none">
+        <div class="card"><div class="card-header"><div class="card-title">Bank Details</div>
+            <button class="btn btn-gold btn-sm" onclick="saveSettings()">Save</button></div>
+          <div class="card-body">
+            <div class="form-row form-row-2">
+              <div class="form-group"><label>Account Name</label><input id="set-bank-name" value="S MOTIRAM (UK) LIMITED"/></div>
+              <div class="form-group"><label>Bank Name</label><input id="set-bank-bankname" placeholder="e.g. Barclays"/></div>
+            </div>
+            <div class="form-row form-row-2">
+              <div class="form-group"><label>Sort Code</label><input id="set-sort-code" placeholder="XX-XX-XX"/></div>
+              <div class="form-group"><label>Account No.</label><input id="set-account-no" placeholder="XXXXXXXX"/></div>
+            </div>
+            <div class="form-group" style="margin-top:10px"><label>Payment Methods</label>
+              <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+                <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="pm-bacs" checked/> BACS</label>
+                <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="pm-cash" checked/> Cash</label>
+                <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="pm-cheque"/> Cheque</label>
+                <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="pm-card"/> Card</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- end main -->
 
 <!-- ============ MODALS ============ -->
@@ -1233,21 +1098,12 @@
       </div>
 
       <hr class="divider"/>
-      <p style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:12px">Order Items</p>
-      <table style="margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
-        <thead><tr><th>Product</th><th>Qty</th><th>Unit Price (₹)</th><th>Total (₹)</th><th>Total (£)</th><th></th></tr></thead>
-        <tbody>
-          <tr>
-            <td><select><option>Silk Fabric — Blue</option><option>Banarasi Saree</option><option>Lehenga Set</option></select></td>
-            <td><input type="number" value="50" style="width:70px"/></td>
-            <td><input type="number" value="900" style="width:90px"/></td>
-            <td class="mono">₹45,000</td>
-            <td class="mono">£420</td>
-            <td><button class="btn btn-danger btn-sm">✕</button></td>
-          </tr>
-        </tbody>
-      </table>
-      <button class="btn btn-outline btn-sm">+ Add Item</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <p style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin:0">Order Items</p>
+        <button class="btn btn-outline btn-sm" onclick="addPOLine()">+ Add Item</button>
+      </div>
+      <div id="po-new-lines"></div>
+      <div id="po-new-total" style="text-align:right;font-size:13px;color:var(--text-light);margin-top:8px"></div>
 
       <div class="landed-section">
         <div class="landed-title">
@@ -1705,6 +1561,44 @@
   </div>
 </div>
 
+
+<!-- QUICK ADD PRODUCT MODAL -->
+<div class="modal-overlay" id="modal-quick-product">
+  <div class="modal" style="width:500px">
+    <div class="modal-header"><div class="modal-title">✚ Quick Add Product</div>
+      <button class="modal-close" onclick="closeModal('modal-quick-product')">✕</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:14px"><div>Adds to catalogue and selects it in current line. Existing products unaffected.</div></div>
+      <input type="hidden" id="qap-line-id"/>
+      <div class="form-row form-row-2">
+        <div class="form-group"><label>SKU *</label><input id="qap-sku" placeholder="e.g. SMK-128"/></div>
+        <div class="form-group"><label>Product Name *</label><input id="qap-name" placeholder="e.g. Mango Pickle 500g"/></div>
+      </div>
+      <div class="form-row form-row-3">
+        <div class="form-group"><label>Unit</label>
+          <select id="qap-unit"><option>pcs</option><option>kg</option><option>g</option><option>metres</option><option>box</option><option>case</option></select>
+        </div>
+        <div class="form-group"><label>Buy Price (£)</label><input type="number" id="qap-buy" step="0.01" placeholder="0.00"/></div>
+        <div class="form-group"><label>Sell Price (£)</label><input type="number" id="qap-sell" step="0.01" placeholder="0.00"/></div>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group"><label>VAT</label>
+          <select id="qap-vat">
+            <option value="0">0% — Zero rated (food)</option>
+            <option value="20" selected>20% — Standard</option>
+            <option value="5">5% — Reduced</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Opening Stock</label><input type="number" id="qap-stock" value="0"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-quick-product')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveQuickAddProduct()">✚ Add to Catalogue &amp; Line</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOGO UPLOAD MODAL -->
 <div class="modal-overlay" id="modal-logo">
   <div class="modal" style="width:480px">
@@ -1725,6 +1619,7 @@
 </div>
 
 <!-- TOAST -->
+<div id="db-status" style="position:fixed;bottom:60px;right:20px;background:#1a1a2e;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;z-index:9999;max-width:400px;display:none"></div>
 <div class="toast" id="toast">✓ <span id="toast-msg"></span></div>
 
 <!-- Loading overlay -->
@@ -1758,6 +1653,97 @@ function initSupabase() {
   return false;
 }
 
+
+// ═══════════════════════════════════════════════════
+// SUPABASE REST HELPER — bypasses Supabase JS client
+// Fixes DataCloneError: Headers object could not be cloned
+// ═══════════════════════════════════════════════════
+async function sbGet(table, params) {
+  let url = SUPABASE_URL + '/rest/v1/' + table + '?';
+  if(params.select) url += 'select=' + params.select + '&';
+  if(params.filters) {
+    params.filters.forEach(f => {
+      url += f.col + '=' + f.op + '.' + encodeURIComponent(String(f.val)) + '&';
+    });
+  }
+  if(params.not) {
+    params.not.forEach(f => {
+      if(f.val === 'null') {
+        url += f.col + '=not.' + f.op + '.null&';
+      } else {
+        url += f.col + '=not.' + f.op + '.' + encodeURIComponent(String(f.val)) + '&';
+      }
+    });
+  }
+  if(params.order) url += 'order=' + params.order + '&';
+  if(params.limit) url += 'limit=' + params.limit + '&';
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer ' + SUPABASE_ANON
+    }
+  });
+  if(!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('GET ' + table + ' failed ' + resp.status + ': ' + errText);
+  }
+  return await resp.json();
+}
+
+async function sbPost(table, data) {
+  const url = SUPABASE_URL + '/rest/v1/' + table;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer ' + SUPABASE_ANON,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(data)
+  });
+  if(!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('POST ' + table + ' failed ' + resp.status + ': ' + errText);
+  }
+  return await resp.json();
+}
+
+async function sbPatch(table, data, filterCol, filterVal) {
+  if(!filterVal) throw new Error('sbPatch: filterVal is required');
+  const url = SUPABASE_URL + '/rest/v1/' + table + '?' + filterCol + '=eq.' + encodeURIComponent(String(filterVal));
+  const resp = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer ' + SUPABASE_ANON,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(data)
+  });
+  if(!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('PATCH ' + table + ' failed ' + resp.status + ': ' + errText);
+  }
+  return await resp.json();
+}
+
+async function sbDelete(table, filterCol, filterVal) {
+  const url = SUPABASE_URL + '/rest/v1/' + table + '?' + encodeURIComponent(filterCol) + '=eq.' + encodeURIComponent(filterVal);
+  const resp = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer ' + SUPABASE_ANON,
+      'Content-Type': 'application/json'
+    }
+  });
+  if(!resp.ok) throw new Error('HTTP ' + resp.status + ': ' + await resp.text());
+  return true;
+}
+
 // ═══════════════════════════════════════════════════
 // LIVE DATA — loaded from Supabase, falls back to demo
 // ═══════════════════════════════════════════════════
@@ -1771,152 +1757,146 @@ let SUPPLIERS     = {};
 // ─── Loaders ───────────────────────────────────────
 
 async function loadProducts() {
-  if(!db) { loadDemoProducts(); return; }
+  if(!db && !SUPABASE_URL) { loadDemoProducts(); return; }
   try {
-    const { data, error } = await db
-      .from('products')
-      .select('id,sku,name,unit,default_sell_price_gbp,vat_rate,stock_qty,low_stock_threshold,avg_landed_cost_gbp,hs_code,barcode,last_purchase_date')
-      .eq('is_active', true)
-      .order('name');
-
-    if(error) {
-      console.error('loadProducts error:', error.message);
-      showToast('Could not load products: ' + error.message);
-      return;
-    }
-
+    const data = await sbGet('products', {
+      select: 'id,sku,name,unit,default_sell_price_gbp,vat_rate,stock_qty,low_stock_threshold,avg_landed_cost_gbp,hs_code,barcode',
+      filters: [{col:'is_active', op:'eq', val:'true'}],
+      order: 'name'
+    });
+    console.log('loadProducts response:', data?.length, 'items', data?.[0]);
     PRODUCTS = {};
     if(!data || data.length === 0) {
-      renderProductsTable(); // will show empty state
+      console.warn('No products returned from DB');
+      renderProductsTable();
       return;
     }
     data.forEach(p => {
       PRODUCTS[p.id] = {
-        id:           p.id,
-        sku:          p.sku          || '',
-        name:         p.name         || '',
-        unit:         p.unit         || 'pcs',
-        defaultPrice: parseFloat(p.default_sell_price_gbp  || 0),
-        vat:          (p.vat_rate === 0 || p.vat_rate > 0) ? parseFloat(p.vat_rate) : 20,
-        landed:       parseFloat(p.avg_landed_cost_gbp     || 0),
-        stock:        parseFloat(p.stock_qty               || 0),
-        lowStock:     parseFloat(p.low_stock_threshold     || 10),
-        hs:           p.hs_code      || '',
-        barcode:      p.barcode      || '',
-        category:     p.category_id  || '',
-        lastPurchase: p.last_purchase_date || '',
+        id: p.id, sku: p.sku||'', name: p.name||'', unit: p.unit||'pcs',
+        defaultPrice: parseFloat(p.default_sell_price_gbp||0),
+        vat: (p.vat_rate===0||p.vat_rate>0) ? parseFloat(p.vat_rate) : 20,
+        landed: parseFloat(p.avg_landed_cost_gbp||0),
+        stock: parseFloat(p.stock_qty||0),
+        lowStock: parseFloat(p.low_stock_threshold||10),
+        hs: p.hs_code||'', barcode: p.barcode||'', category: ''
       };
     });
     renderProductsTable();
+    // Rebuild category filter from real product data
+    const catSel = document.getElementById('prod-cat-filter');
+    if(catSel) {
+      const cats = [...new Set(Object.values(PRODUCTS).map(p=>p.category).filter(Boolean))].sort();
+      const cur = catSel.value;
+      catSel.innerHTML = '<option value="">All Categories</option>' +
+        cats.map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+    }
   } catch(e) {
-    console.error('loadProducts fetch failed:', e.message);
-    showToast('Database unreachable — products not loaded. Check connection.');
+    console.error('loadProducts error:', e.message);
+    showToast('Could not load products: ' + e.message);
   }
 }
 
 
 async function loadCustomers() {
-  if(!db) { loadDemoCustomers(); return; }
+  if(!db && !SUPABASE_URL) { loadDemoCustomers(); return; }
   try {
-    const { data, error } = await db
-      .from('customers')
-      .select('id,name,company_name,contact_person,phone,whatsapp,email,address_line1,address_line2,city,postcode,vat_number,payment_terms_days,price_tier_id,price_tiers(name)')
-      .eq('is_active', true)
-      .order('name');
-
-    if(error) {
-      console.error('loadCustomers error:', error.message);
-      showToast('Could not load customers: ' + error.message);
-      return;
-    }
+    const data = await sbGet('customers', {
+      select: 'id,name,company_name,contact_person,phone,whatsapp,email,address_line1,city,postcode,vat_number,payment_terms_days,price_tier_id',
+      filters: [{col:'is_active', op:'eq', val:'true'}],
+      order: 'name'
+    });
+    // Get price tiers separately
+    const tiers = await sbGet('price_tiers', { select: 'id,name' });
+    const tierMap = {};
+    (tiers||[]).forEach(t => tierMap[t.id] = t.name);
 
     CUSTOMERS = {};
     (data||[]).forEach(c => {
       CUSTOMERS[c.id] = {
-        id:         c.id,
-        name:       c.name          || '',
-        company:    c.company_name  || '',
-        contact:    c.contact_person|| '',
-        phone:      c.phone         || '',
-        mobile:     c.whatsapp      || '',
-        email:      c.email         || '',
-        address:    [c.address_line1, c.city, c.postcode].filter(Boolean).join(', '),
-        tier:       c.price_tiers?.name || 'Retail',
-        tierId:     c.price_tier_id || null,
-        vatNumber:  c.vat_number    || '',
-        terms:      c.payment_terms_days || 30,
-        lastInv:    '—',
-        balance:    '£0.00',
+        id: c.id, name: c.name||'', company: c.company_name||'',
+        contact: c.contact_person||'', phone: c.phone||'',
+        mobile: c.whatsapp||'', email: c.email||'',
+        address: [c.address_line1, c.city, c.postcode].filter(Boolean).join(', '),
+        tier: tierMap[c.price_tier_id] || 'Retail',
+        tierId: c.price_tier_id||null,
+        vatNumber: c.vat_number||'',
+        terms: c.payment_terms_days||30,
+        lastInv: '—', balance: '£0.00'
       };
     });
-    await loadCustomerBalances();
+    try { await loadCustomerBalances(); } catch(e) {}
     renderCustomersTable();
   } catch(e) {
-    console.error('loadCustomers fetch failed:', e.message);
-    showToast('Database unreachable — customers not loaded.');
+    console.error('loadCustomers error:', e.message);
+    showToast('Could not load customers: ' + e.message);
   }
 }
 
 
 async function loadCustomerBalances() {
-  const { data } = await db.from('invoices')
-    .select('customer_id, balance_due_gbp, invoice_date')
-    .not('status', 'in', '("DRAFT","CANCELLED")');
-  if(!data) return;
-  const balMap = {}, lastMap = {};
-  data.forEach(inv => {
-    balMap[inv.customer_id] = (balMap[inv.customer_id] || 0) + parseFloat(inv.balance_due_gbp || 0);
-    if(!lastMap[inv.customer_id] || inv.invoice_date > lastMap[inv.customer_id])
-      lastMap[inv.customer_id] = inv.invoice_date;
-  });
-  Object.keys(CUSTOMERS).forEach(cid => {
-    const bal = balMap[cid] || 0;
-    CUSTOMERS[cid].balance = bal > 0 ? '£' + bal.toFixed(2) : '£0.00';
-    CUSTOMERS[cid].lastInv = lastMap[cid] ? new Date(lastMap[cid]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
-  });
+  try {
+    const data = await sbGet('invoices', {
+      select: 'customer_id,balance_due_gbp,invoice_date',
+      not: [{col:'status', op:'in', val:'("DRAFT","CANCELLED")'}]
+    });
+    if(!data) return;
+    const balMap = {}, lastMap = {};
+    data.forEach(inv => {
+      balMap[inv.customer_id] = (balMap[inv.customer_id]||0) + parseFloat(inv.balance_due_gbp||0);
+      if(!lastMap[inv.customer_id] || inv.invoice_date > lastMap[inv.customer_id])
+        lastMap[inv.customer_id] = inv.invoice_date;
+    });
+    Object.keys(CUSTOMERS).forEach(cid => {
+      const bal = balMap[cid]||0;
+      CUSTOMERS[cid].balance = bal > 0 ? '£'+bal.toFixed(2) : '£0.00';
+      CUSTOMERS[cid].lastInv = lastMap[cid]
+        ? new Date(lastMap[cid]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    });
+  } catch(e) { console.warn('loadCustomerBalances:', e.message); }
 }
+
 
 async function loadPriceHistory() {
-  // Load last price charged per customer per product from invoice_lines
-  const { data } = await db.from('invoice_lines').select(`
-    product_id, unit_price_gbp, created_at,
-    invoices!inner(customer_id, invoice_number, invoice_date, status)
-  `).not('invoices.status', 'in', '("DRAFT","CANCELLED")')
-    .order('created_at', { ascending: false });
-  if(!data) return;
-  PRICE_HISTORY = {};
-  const seen = new Set();
-  data.forEach(line => {
-    const cid = line.invoices?.customer_id;
-    const pid = line.product_id;
-    const key = `${cid}__${pid}`;
-    if(seen.has(key)) return; // only most recent
-    seen.add(key);
-    if(!PRICE_HISTORY[cid]) PRICE_HISTORY[cid] = {};
-    PRICE_HISTORY[cid][pid] = {
-      price: parseFloat(line.unit_price_gbp),
-      date: new Date(line.invoices.invoice_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
-      inv: line.invoices.invoice_number,
-      src: 'history'
-    };
-  });
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyAgo = new Date(Date.now()-30*864e5).toISOString().split('T')[0];
+    const data = await sbGet('invoice_lines',{
+      select:'product_id,unit_price_gbp,invoices(invoice_date,customer_id,customers(name))',
+      filters:[{col:'invoices.invoice_date',op:'gte',val:thirtyAgo}],
+      limit:500
+    });
+    PRICE_HISTORY = {};
+    (data||[]).forEach(l=>{
+      if(!l.product_id) return;
+      if(!PRICE_HISTORY[l.product_id]) PRICE_HISTORY[l.product_id]=[];
+      PRICE_HISTORY[l.product_id].push({
+        price:parseFloat(l.unit_price_gbp||0),
+        customer:l.invoices?.customers?.name||'',
+        date:l.invoices?.invoice_date||''
+      });
+    });
+  } catch(e) { PRICE_HISTORY = {}; }
 }
 
+
 async function loadTierPrices() {
-  const { data } = await db.from('tier_product_prices').select(`
-    tier_id, product_id, price_gbp,
-    price_tiers(name)
-  `).lte('effective_from', new Date().toISOString().split('T')[0])
-    .or('effective_to.is.null,effective_to.gte.' + new Date().toISOString().split('T')[0]);
-  if(!data) return;
-  TIER_PRICES = {};
-  data.forEach(r => {
-    const tierName = r.price_tiers?.name;
-    if(!tierName) return;
-    if(!TIER_PRICES[tierName]) TIER_PRICES[tierName] = {};
-    TIER_PRICES[tierName][r.product_id] = parseFloat(r.price_gbp);
-  });
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const data = await sbGet('tier_product_prices', {
+      select: 'tier_id,product_id,price_gbp,price_tiers(name)',
+      filters: [{col:'effective_from', op:'lte', val:today}]
+    });
+    TIER_PRICES = {};
+    (data||[]).forEach(r => {
+      const tierName = r.price_tiers?.name;
+      if(!tierName) return;
+      if(!TIER_PRICES[tierName]) TIER_PRICES[tierName] = {};
+      TIER_PRICES[tierName][r.product_id] = parseFloat(r.price_gbp);
+    });
+  } catch(e) { console.warn('loadTierPrices:', e.message); }
 }
+
 
 async function loadInvoices() {
   const tbody = document.getElementById('invoices-table');
@@ -1925,11 +1905,15 @@ async function loadInvoices() {
     tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text-light)">Not connected to database</td></tr>';
     return;
   }
-  const { data } = await db.from('invoices')
-    .select('id,invoice_number,customer_id,status,invoice_date,due_date,subtotal_gbp,vat_total_gbp,total_gbp,amount_paid_gbp,balance_due_gbp,customers(name)')
-    .not('status','eq','CANCELLED')
-    .order('invoice_date',{ascending:false})
-    .limit(200);
+  let data = null;
+  try {
+    data = await sbGet('invoices', {
+      select: 'id,invoice_number,customer_id,status,invoice_date,due_date,subtotal_gbp,vat_total_gbp,total_gbp,amount_paid_gbp,balance_due_gbp,customers(name)',
+      not: [{col:'status', op:'eq', val:'CANCELLED'}],
+      order: 'invoice_date.desc',
+      limit: 200
+    });
+  } catch(e) { console.error('loadInvoices:', e.message); }
 
   if(!data||!data.length) {
     tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-light)">No invoices yet — click <strong>New Invoice</strong> to create one</td></tr>';
@@ -1970,17 +1954,25 @@ async function loadInvoices() {
 
 
 async function loadSuppliers() {
-  if(!db) return;
-  const { data } = await db.from('suppliers').select('*').eq('is_active',true).order('name');
-  if(!data) return;
-  SUPPLIERS = {};
-  data.forEach(s => {
-    SUPPLIERS[s.id] = { id:s.id, name:s.name, contact:s.contact_person, phone:s.phone,
-      whatsapp:s.whatsapp, email:s.email, city:s.city, country:s.country||'India',
-      gst:s.gst_number, currency:s.default_currency||'INR', terms:s.payment_terms_days||30 };
-  });
-  renderSuppliersTable();
+  try {
+    const data = await sbGet('suppliers', {
+      select: 'id,name,contact_person,phone,whatsapp,email,city,country,gst_number,default_currency,payment_terms_days',
+      filters: [{col:'is_active', op:'eq', val:'true'}],
+      order: 'name'
+    });
+    SUPPLIERS = {};
+    (data||[]).forEach(s => {
+      SUPPLIERS[s.id] = {
+        id:s.id, name:s.name, contact:s.contact_person, phone:s.phone,
+        whatsapp:s.whatsapp, email:s.email, city:s.city,
+        country:s.country||'India', gst:s.gst_number,
+        currency:s.default_currency||'INR', terms:s.payment_terms_days||30
+      };
+    });
+    renderSuppliersTable();
+  } catch(e) { console.warn('loadSuppliers:', e.message); }
 }
+
 
 function renderSuppliersTable() {
   const tbody = document.getElementById('suppliers-table');
@@ -2021,7 +2013,6 @@ function renderSuppliersTable() {
 
 
 async function saveSupplier() {
-  if(!db) { showToast('Not connected to database'); return; }
   const name    = document.getElementById('sup-name')?.value?.trim();
   const contact = document.getElementById('sup-contact')?.value?.trim();
   const phone   = document.getElementById('sup-phone')?.value?.trim();
@@ -2029,31 +2020,39 @@ async function saveSupplier() {
   const email   = document.getElementById('sup-email')?.value?.trim();
   const gst     = document.getElementById('sup-gst')?.value?.trim();
   const city    = document.getElementById('sup-city')?.value?.trim();
-  const state   = document.getElementById('sup-state')?.value?.trim();
-  const cur     = document.getElementById('sup-currency')?.value||'INR';
+  const currency= document.getElementById('sup-currency')?.value||'INR';
   const terms   = parseInt(document.getElementById('sup-terms')?.value||30);
-  const notes   = document.getElementById('sup-notes')?.value?.trim();
-  if(!name){ showToast('Supplier name is required'); return; }
   const editId  = document.getElementById('sup-edit-id')?.value;
-  let error;
-  if(editId) {
-    ({error} = await db.from('suppliers').update({name,contact_person:contact,phone,whatsapp:wa,email,gst_number:gst,city,state,default_currency:cur,payment_terms_days:terms,notes,is_active:true}).eq('id',editId));
-  } else {
-    ({error} = await db.from('suppliers').insert({name,contact_person:contact,phone,whatsapp:wa,email,gst_number:gst,city,state,default_currency:cur,payment_terms_days:terms,notes,is_active:true}));
+  if(!name) { showToast('Supplier name is required'); return; }
+  const payload = {
+    name,contact_person:contact||null,phone:phone||null,
+    whatsapp:wa||null,email:email||null,gst_number:gst||null,
+    city:city||null,country:'India',default_currency:currency,
+    payment_terms_days:terms,is_active:true
+  };
+  try {
+    if(editId) { await sbPatch('suppliers',payload,'id',editId); }
+    else { await sbPost('suppliers',payload); }
+    showToast(editId?'✓ Supplier updated':'✓ Supplier added');
+    const hi=document.getElementById('sup-edit-id'); if(hi) hi.value='';
+    closeModal('modal-supplier');
+    await loadSuppliers();
+  } catch(e) {
+    showToast('Error: '+e.message);
+    console.error('saveSupplier:',e);
   }
-  if(error){ showToast('Error: '+error.message); return; }
-  showToast(editId?'Supplier updated':'Supplier added');
-  closeModal('modal-supplier'); await loadSuppliers();
 }
 
+
 async function deleteSupplier(id, name) {
-  if(!db) { showToast('Not connected to database'); return; }
-  if(!confirm('Delete supplier "' + name + '"?\nExisting purchase orders will not be affected.')) return;
-  const {error} = await db.from('suppliers').update({is_active: false}).eq('id', id);
-  if(error) { showToast('Error: ' + error.message); return; }
-  showToast('Supplier removed');
-  await loadSuppliers();
+  if(!confirm('Remove supplier "'+name+'"?')) return;
+  try {
+    await sbPatch('suppliers',{is_active:false},'id',id);
+    showToast('Supplier removed');
+    await loadSuppliers();
+  } catch(e) { showToast('Error: '+e.message); }
 }
+
 
 async function editSupplier(id) {
   const s = SUPPLIERS[id]; if(!s) return;
@@ -2071,17 +2070,14 @@ async function editSupplier(id) {
 }
 
 async function deleteProduct(id, name) {
-  if(id && id.startsWith('DEMO-')) {
-    showToast('Connect to database first — this is demo data');
-    return;
-  }
-  if(!db) { showToast('Not connected to database'); return; }
-  if(!confirm('Delete product "' + name + '"?\nExisting invoices will not be affected.')) return;
-  const {error} = await db.from('products').update({is_active: false}).eq('id', id);
-  if(error) { showToast('Error: ' + error.message); console.error('deleteProduct:', error); return; }
-  delete PRODUCTS[id];
-  renderProductsTable();
-  showToast('Product removed');
+  if(id&&id.startsWith('DEMO-')){showToast('Demo data — connect to database first');return;}
+  if(!confirm('Delete "'+name+'"?')) return;
+  try {
+    await sbPatch('products',{is_active:false},'id',id);
+    delete PRODUCTS[id];
+    renderProductsTable();
+    showToast('Product removed');
+  } catch(e) { showToast('Error: '+e.message); }
 }
 
 
@@ -2113,15 +2109,16 @@ async function editProduct(id) {
 
 
 async function deleteCustomer(id, name) {
-  if(!db) { showToast('Not connected to database'); return; }
-  if(!confirm('Delete customer "' + name + '"?\nTheir invoices will be kept.')) return;
-  const {error} = await db.from('customers').update({is_active: false}).eq('id', id);
-  if(error) { showToast('Error: ' + error.message); return; }
-  delete CUSTOMERS[id];
-  renderCustomersTable();
-  buildCustomerDropdown();
-  showToast('Customer removed');
+  if(!confirm('Remove "'+name+'"?')) return;
+  try {
+    await sbPatch('customers',{is_active:false},'id',id);
+    delete CUSTOMERS[id];
+    renderCustomersTable();
+    buildCustomerDropdown();
+    showToast('Customer removed');
+  } catch(e) { showToast('Error: '+e.message); }
 }
+
 
 async function editCustomer(id) {
   const c = CUSTOMERS[id]; if(!c) return;
@@ -2141,7 +2138,7 @@ async function editCustomer(id) {
 async function deleteInvoice(id, number) {
   if(!confirm('Cancel invoice '+number+'?\nThis will mark it as CANCELLED and restore stock.')) return;
   if(!db){ showToast('Not connected'); return; }
-  const {error} = await db.from('invoices').update({status:'CANCELLED'}).eq('id',id);
+  const {error} = await sbPatch('invoices',{status:'CANCELLED'},'id',id);
   if(error){ showToast('Error: '+error.message); return; }
   showToast('Invoice '+number+' cancelled'); await loadInvoices();
 }
@@ -2149,10 +2146,14 @@ async function deleteInvoice(id, number) {
 async function loadDashboardStats() {
   // Revenue this month
   const startOfMonth = new Date(); startOfMonth.setDate(1);
-  const { data: revData } = await db.from('invoices')
-    .select('total_gbp, amount_paid_gbp, balance_due_gbp')
-    .gte('invoice_date', startOfMonth.toISOString().split('T')[0])
-    .not('status','in','("DRAFT","CANCELLED")');
+  let revData = null;
+  try {
+    revData = await sbGet('invoices', {
+      select: 'total_gbp,amount_paid_gbp,balance_due_gbp',
+      filters: [{col:'invoice_date', op:'gte', val:startOfMonth.toISOString().split('T')[0]}],
+      not: [{col:'status', op:'in', val:'("DRAFT","CANCELLED")'}]
+    });
+  } catch(e) { console.warn('stats rev:', e); }
   if(revData) {
     const rev = revData.reduce((s,r) => s + parseFloat(r.total_gbp||0), 0);
     const outstanding = revData.reduce((s,r) => s + parseFloat(r.balance_due_gbp||0), 0);
@@ -2162,13 +2163,34 @@ async function loadDashboardStats() {
     if(el2) el2.textContent = '£' + outstanding.toLocaleString('en-GB',{minimumFractionDigits:0});
   }
   // Stock count
-  const { data: stockData } = await db.from('products').select('id, stock_qty, avg_landed_cost_gbp, low_stock_threshold').eq('is_active',true);
+  const stockData = await sbGet('products',{select:'id,sku,name,unit,stock_qty,avg_landed_cost_gbp,low_stock_threshold',filters:[{col:'is_active',op:'eq',val:'true'}]}).catch(()=>[]);
   if(stockData) {
     const el3 = document.querySelector('#page-dashboard .stats-grid .stat-card:nth-child(3) .stat-value');
     if(el3) el3.textContent = stockData.length;
     const stockVal = stockData.reduce((s,p) => s + parseFloat(p.stock_qty||0)*parseFloat(p.avg_landed_cost_gbp||0), 0);
     const el4 = document.querySelector('#page-dashboard .stats-grid .stat-card:nth-child(4) .stat-value');
     if(el4) el4.textContent = '£' + stockVal.toLocaleString('en-GB',{minimumFractionDigits:0});
+
+    // Low stock alerts
+    const lowItems = (stockData||[]).filter(p =>
+      parseFloat(p.stock_qty||0) <= parseFloat(p.low_stock_threshold||10)
+    );
+    const lowEl = document.getElementById('low-stock-alerts');
+    const lowCount = document.getElementById('low-stock-count');
+    if(lowCount) lowCount.textContent = lowItems.length > 0 ? '⚠ '+lowItems.length+' low stock' : '✓ All stocked';
+    if(lowCount) lowCount.style.color = lowItems.length > 0 ? 'var(--warning)' : 'var(--success)';
+    if(lowEl) {
+      if(!lowItems.length) {
+        lowEl.innerHTML = '<span style="color:var(--success);font-size:13px">✓ All products adequately stocked</span>';
+      } else {
+        lowEl.innerHTML = lowItems.slice(0,8).map(p =>
+          `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span><strong>${p.name}</strong> <span style="color:var(--text-light);font-size:11px">${p.sku}</span></span>
+            <span style="color:var(--warning);font-weight:600">${p.stock_qty} ${p.unit||'pcs'} left</span>
+          </div>`
+        ).join('') + (lowItems.length>8?`<div style="font-size:11px;color:var(--text-light);margin-top:4px">+${lowItems.length-8} more</div>`:'');
+      }
+    }
   }
 }
 
@@ -2250,162 +2272,129 @@ function renderCustomersTable() {
 
 
 async function saveInvoice(status = 'DRAFT') {
-  if(!db) { showToast('Not connected to database'); return null; }
-  if(!currentCustomerId) { showToast('Select a customer first'); return; }
+  if(!SUPABASE_URL) { showToast('Not connected'); return null; }
+  if(!currentCustomerId) { showToast('Select a customer first'); return null; }
+
   const lines = [];
   let subtotal = 0, vatTotal = 0;
-  let valid = true;
   document.querySelectorAll('.inv-line-row').forEach(row => {
-    const lid = row.dataset.lineId;
-    const pid = row.dataset.product;
-    if(!pid) return;
-    const qty   = parseFloat(document.getElementById(`qty_${lid}`)?.value   || 0);
-    const price = parseFloat(document.getElementById(`price_${lid}`)?.value || 0);
-    const disc  = parseFloat(document.getElementById(`disc_${lid}`)?.value  || 0);
-    const vat   = (PRODUCTS[pid]?.vat===0||PRODUCTS[pid]?.vat>0)?PRODUCTS[pid].vat:20;
+    const lid   = row.dataset.lineId;
+    const pid   = row.dataset.product;
+    if(!lid) return;
+    const desc  = document.getElementById('desc_'+lid)?.value?.trim() || PRODUCTS[pid]?.name || '';
+    const qty   = parseFloat(document.getElementById('qty_'+lid)?.value||0);
+    const price = parseFloat(document.getElementById('price_'+lid)?.value||0);
+    const disc  = parseFloat(document.getElementById('disc_'+lid)?.value||0);
+    if(!qty && !desc) return;
+    const vatVal  = pid && PRODUCTS[pid] ? ((PRODUCTS[pid].vat===0||PRODUCTS[pid].vat>0)?PRODUCTS[pid].vat:20) : 20;
     const lineSub = qty * price * (1 - disc/100);
-    const lineVat = lineSub * vat / 100;
+    const lineVat = lineSub * vatVal / 100;
     subtotal += lineSub; vatTotal += lineVat;
-    lines.push({ product_id: pid, line_number: lines.length+1, qty, unit_price_gbp: price,
-      discount_pct: disc, vat_rate: vat, unit_cost_gbp: PRODUCTS[pid]?.landed || 0,
-      description: PRODUCTS[pid]?.name });
+    lines.push({
+      product_id: pid||null, line_number: lines.length+1,
+      description: desc, qty, unit_price_gbp: price,
+      discount_pct: disc, vat_rate: vatVal,
+      line_total_gbp: lineSub + lineVat
+    });
   });
-  if(!lines.length) { showToast('Add at least one product'); return; }
+  if(!lines.length) { showToast('Add at least one product line'); return null; }
 
-  // Get next invoice number
-  const { data: settings } = await db.from('company_settings').select('invoice_prefix, invoice_next_number').limit(1).single();
-  const prefix = settings?.invoice_prefix || 'INV-';
-  const num    = settings?.invoice_next_number || 1001;
+  // Get invoice number
+  let prefix = 'INV-', num = 1001;
+  try {
+    const settings = await sbGet('company_settings',{select:'id,invoice_prefix,invoice_next_number',limit:1});
+    if(settings?.[0]) { prefix=settings[0].invoice_prefix||'INV-'; num=settings[0].invoice_next_number||1001; }
+  } catch(e) {}
   const invNum = prefix + num;
 
-  const dueDate = document.getElementById('inv-due')?.value;
-  const invDate = document.getElementById('inv-date')?.value;
-
-  const { data: inv, error: invErr } = await db.from('invoices').insert({
-    invoice_number: invNum, customer_id: currentCustomerId, status,
-    invoice_date: invDate, due_date: dueDate,
-    delivery_date: document.getElementById('inv-delivery')?.value||null,
-    subtotal_gbp: subtotal, vat_total_gbp: vatTotal,
-    total_gbp: subtotal + vatTotal, amount_paid_gbp: 0
-  }).select().single();
-
-  if(invErr) { showToast('Error saving invoice: ' + (invErr.message||JSON.stringify(invErr))); console.error('saveInvoice:', invErr); return null; }
-
-  // Save lines
-  const lineData = lines.map(l => ({ ...l, invoice_id: inv.id }));
-  await db.from('invoice_lines').insert(lineData);
-
-  // Increment invoice number
-  await db.from('company_settings').update({ invoice_next_number: num + 1 }).eq('id', settings?.id || '');
-
-  // Update stock movements
-  for(const l of lines) {
-    const prod = PRODUCTS[l.product_id];
-    const newStock = (prod?.stock || 0) - l.qty;
-    await db.from('stock_movements').insert({
-      product_id: l.product_id, movement_type: 'SALE',
-      qty: -l.qty, unit_cost_gbp: l.unit_cost_gbp,
-      stock_after: newStock, invoice_id: inv.id
+  try {
+    const invData = await sbPost('invoices', {
+      invoice_number: invNum, customer_id: currentCustomerId, status,
+      invoice_date: document.getElementById('inv-date')?.value || new Date().toISOString().split('T')[0],
+      due_date: document.getElementById('inv-due')?.value || null,
+      delivery_date: document.getElementById('inv-delivery')?.value || null,
+      notes: document.getElementById('inv-notes')?.value || null,
+      subtotal_gbp: subtotal, vat_total_gbp: vatTotal,
+      total_gbp: subtotal + vatTotal, amount_paid_gbp: 0,
+      balance_due_gbp: subtotal + vatTotal
     });
-    await db.from('products').update({ stock_qty: newStock }).eq('id', l.product_id);
-    if(prod) prod.stock = newStock;
-  }
+    const inv = Array.isArray(invData) ? invData[0] : invData;
+    if(!inv?.id) throw new Error('Invoice not created');
 
-  showToast('Invoice ' + invNum + ' saved successfully');
-  await loadInvoices();
-  await loadPriceHistory();
-  closeModal('modal-invoice');
-  return inv.id;
+    // Save lines
+    await sbPost('invoice_lines', lines.map(l => ({...l, invoice_id: inv.id})));
+
+    // Increment invoice number
+    try {
+      const settings = await sbGet('company_settings',{select:'id',limit:1});
+      if(settings?.[0]?.id) await sbPatch('company_settings',{invoice_next_number:num+1},'id',settings[0].id);
+    } catch(e) {}
+
+    showToast('✓ Invoice ' + invNum + ' saved');
+    closeModal('modal-invoice');
+    loadInvoices();
+    return inv.id;
+  } catch(e) {
+    showToast('Error saving invoice: ' + e.message);
+    console.error('saveInvoice:', e);
+    return null;
+  }
 }
 
-// ─── Save Product ───────────────────────────────────
 
 async function saveProduct() {
-  if(!db) { showToast('Not connected to database'); return; }
   const sku   = document.getElementById('new-sku')?.value?.trim();
   const name  = document.getElementById('new-name')?.value?.trim();
-  const unit  = document.getElementById('new-unit')?.value || 'pcs';
-  const price = parseFloat(document.getElementById('new-price')?.value || 0);
-  const vatRaw = document.getElementById('new-vat')?.value;
-  const vat   = vatRaw !== undefined && vatRaw !== '' ? parseFloat(vatRaw) : 20;
-  const stock = parseFloat(document.getElementById('new-stock')?.value || 0);
-  const hs    = document.getElementById('new-hs')?.value?.trim() || null;
-  const wt    = parseFloat(document.getElementById('new-weight')?.value || 0);
-  const low   = parseFloat(document.getElementById('new-low')?.value || 10);
+  const unit  = document.getElementById('new-unit')?.value||'pcs';
+  const price = parseFloat(document.getElementById('new-price')?.value||0);
+  const vatRaw= document.getElementById('new-vat')?.value;
+  const vat   = (vatRaw!==undefined&&vatRaw!=='') ? parseFloat(vatRaw) : 20;
+  const stock = parseFloat(document.getElementById('new-stock')?.value||0);
+  const hs    = document.getElementById('new-hs')?.value?.trim()||null;
+  const low   = parseFloat(document.getElementById('new-low')?.value||10);
+  const editId= document.getElementById('prod-edit-id')?.value;
+  if(!sku||!name) { showToast('SKU and Name are required'); return; }
+  const vatType = vat===0?'ZERO':vat===5?'REDUCED':'STANDARD';
 
-  if(!sku || !name) { showToast('SKU and name are required'); return; }
-
-  const editId = document.getElementById('prod-edit-id')?.value;
-  // vat_type maps vat rate to the enum the DB requires
-  const vatType = vat === 0 ? 'ZERO' : vat === 5 ? 'REDUCED' : 'STANDARD';
-
-  let data, error;
-  if(editId) {
-    // On edit — don't overwrite stock (managed separately via stock movements)
-    const editPayload = {
-      sku, name, unit,
-      default_sell_price_gbp: price || null,
-      vat_type: vatType,
-      vat_rate: vat,
-      hs_code: hs,
-      weight_kg: wt || null,
-      low_stock_threshold: low,
-      country_of_origin: 'India',
-      is_active: true
-    };
-    ({data, error} = await db.from('products').update(editPayload).eq('id', editId).select().single());
-  } else {
-    // On insert — include stock
-    const insertPayload = {
-      sku, name, unit,
-      default_sell_price_gbp: price || null,
-      vat_type: vatType,
-      vat_rate: vat,
-      stock_qty: stock,
-      hs_code: hs,
-      weight_kg: wt || null,
-      low_stock_threshold: low,
-      country_of_origin: 'India',
-      is_active: true
-    };
-    ({data, error} = await db.from('products').insert(insertPayload).select().single());
+  try {
+    let prod;
+    if(editId) {
+      const data = await sbPatch('products',{
+        sku,name,unit,default_sell_price_gbp:price||null,
+        vat_type:vatType,vat_rate:vat,hs_code:hs,
+        low_stock_threshold:low,country_of_origin:'India',is_active:true
+      },'id',editId);
+      prod = Array.isArray(data)?data[0]:data;
+    } else {
+      const data = await sbPost('products',{
+        sku,name,unit,default_sell_price_gbp:price||null,
+        vat_type:vatType,vat_rate:vat,stock_qty:stock,
+        hs_code:hs,low_stock_threshold:low,
+        country_of_origin:'India',is_active:true
+      });
+      prod = Array.isArray(data)?data[0]:data;
+      if(prod?.id && stock>0) {
+        await sbPost('stock_movements',{product_id:prod.id,movement_type:'OPENING',qty:stock,stock_after:stock});
+      }
+    }
+    if(prod?.id) {
+      PRODUCTS[prod.id]={id:prod.id,sku,name,unit,defaultPrice:price,
+        vat,landed:parseFloat(prod.avg_landed_cost_gbp||0),
+        stock:parseFloat(prod.stock_qty||stock),lowStock:low,hs:hs||'',barcode:'',category:''};
+    }
+    showToast(editId?'✓ Product updated':'✓ Product added: '+sku);
+    const hi=document.getElementById('prod-edit-id'); if(hi) hi.value='';
+    closeModal('modal-product');
+    renderProductsTable();
+    loadProducts();
+  } catch(e) {
+    showToast('Error saving product: '+e.message);
+    console.error('saveProduct:',e);
   }
-
-  if(error) {
-    showToast('Error saving product: ' + (error.message || JSON.stringify(error)));
-    console.error('saveProduct error:', error);
-    return;
-  }
-
-  if(!editId && data && stock > 0) {
-    await db.from('stock_movements').insert({
-      product_id: data.id, movement_type: 'OPENING', qty: stock, stock_after: stock
-    });
-  }
-
-  showToast(editId ? '✓ Product updated: ' + sku : '✓ Product added: ' + sku);
-  const hi = document.getElementById('prod-edit-id'); if(hi) hi.value = '';
-  closeModal('modal-product');
-  // Update local cache immediately for instant UI update
-  if(data) {
-    PRODUCTS[data.id] = {
-      id: data.id, sku: data.sku, name: data.name, unit: data.unit || 'pcs',
-      defaultPrice: parseFloat(data.default_sell_price_gbp || 0),
-      vat:     (data.vat_rate===0||data.vat_rate>0)?parseFloat(data.vat_rate):20,
-      landed:  parseFloat(data.avg_landed_cost_gbp || 0),
-      stock:   parseFloat(data.stock_qty || 0),
-      lowStock:parseFloat(data.low_stock_threshold || 10),
-      hs:      data.hs_code || '', barcode: data.barcode || '', category: '',
-    };
-    renderProductsTable(); // instant update
-  }
-  loadProducts(); // background sync
 }
 
-// ─── Save Customer ──────────────────────────────────
 
 async function saveCustomer() {
-  if(!db) { showToast('Not connected to database'); return; }
   const name    = document.getElementById('new-cust-name')?.value?.trim();
   const contact = document.getElementById('new-cust-contact')?.value?.trim();
   const phone   = document.getElementById('new-cust-phone')?.value?.trim();
@@ -2415,50 +2404,45 @@ async function saveCustomer() {
   const city    = document.getElementById('new-cust-city')?.value?.trim();
   const post    = document.getElementById('new-cust-post')?.value?.trim();
   const vatNum  = document.getElementById('new-cust-vat')?.value?.trim();
-  const terms   = parseInt(document.getElementById('new-cust-terms')?.value || 30);
-  const tierSel = document.getElementById('new-cust-tier');
-  const tierName = tierSel?.value || 'Retail';
-
+  const terms   = parseInt(document.getElementById('new-cust-terms')?.value||30);
+  const tierName = document.getElementById('new-cust-tier')?.value||'Retail';
+  const editId  = document.getElementById('cust-edit-id')?.value;
   if(!name) { showToast('Customer name is required'); return; }
 
-  // Get tier id
+  // Get tier id via REST
   let tierId = null;
-  const {data:tierData} = await db.from('price_tiers').select('id').eq('name', tierName).single();
-  tierId = tierData?.id || null;
+  try {
+    const tiers = await sbGet('price_tiers',{select:'id,name',filters:[{col:'name',op:'eq',val:tierName}],limit:1});
+    tierId = tiers?.[0]?.id || null;
+  } catch(e) {}
 
-  const editId = document.getElementById('cust-edit-id')?.value;
   const payload = {
-    name, contact_person: contact || null, phone: phone || null,
-    whatsapp: mobile || null, email: email || null,
-    address_line1: addr1 || null, city: city || null, postcode: post || null,
-    vat_number: vatNum || null, is_vat_registered: !!vatNum,
-    payment_terms_days: terms, price_tier_id: tierId, is_active: true
+    name, contact_person:contact||null, phone:phone||null,
+    whatsapp:mobile||null, email:email||null,
+    address_line1:addr1||null, city:city||null, postcode:post||null,
+    vat_number:vatNum||null, is_vat_registered:!!vatNum,
+    payment_terms_days:terms, price_tier_id:tierId, is_active:true
   };
 
-  let error;
-  if(editId) {
-    ({error} = await db.from('customers').update(payload).eq('id', editId));
-  } else {
-    ({error} = await db.from('customers').insert(payload));
+  try {
+    if(editId) {
+      await sbPatch('customers', payload, 'id', editId);
+    } else {
+      await sbPost('customers', payload);
+    }
+    showToast(editId ? 'Customer updated ✓' : 'Customer added ✓');
+    const hi = document.getElementById('cust-edit-id'); if(hi) hi.value='';
+    closeModal('modal-customer');
+    await loadCustomers();
+    buildCustomerDropdown();
+  } catch(e) {
+    const errMsg = e.message || String(e);
+    showToast('Error: ' + errMsg);
+    console.error('saveCustomer full error:', e);
+    alert('Save customer error:\n' + errMsg + '\n\nCheck browser console (F12) for details.');
   }
-
-  if(error) {
-    showToast('Error saving customer: ' + (error.message || JSON.stringify(error)));
-    console.error('saveCustomer error:', error);
-    return;
-  }
-
-  showToast(editId ? 'Customer updated' : 'Customer added successfully');
-  const hi = document.getElementById('cust-edit-id'); if(hi) hi.value = '';
-  closeModal('modal-customer');
-  await loadCustomers();
-  buildCustomerDropdown();
 }
 
-// ─── Delete Product ─────────────────────────────────
-
-
-// ─── Helpers ────────────────────────────────────────
 
 function fmtDate(d) {
   if(!d) return '—';
@@ -2483,8 +2467,25 @@ function buildCustomerDropdown() {
 // ─── Initial load ───────────────────────────────────
 
 async function initApp() {
-  const toastEl = document.getElementById('toast');
   showToast('Connecting to database…');
+  // Quick connection test - show result visibly
+  try {
+    const testUrl = SUPABASE_URL + '/rest/v1/products?select=id&limit=1';
+    const testResp = await fetch(testUrl, {
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+    const testText = await testResp.text();
+    console.log('DB TEST:', testResp.status, testText.substring(0,100));
+    if(!testResp.ok) {
+      showToast('DB Error ' + testResp.status + ': ' + testText.substring(0,80));
+      document.getElementById('db-status').textContent = '❌ ' + testResp.status + ': ' + testText.substring(0,50);
+      document.getElementById('db-status').style.color = 'red';
+    }
+  } catch(e) {
+    console.error('DB connection test failed:', e.message);
+    showToast('Network error: ' + e.message);
+    const dbs=document.getElementById('db-status'); if(dbs){dbs.style.display='block';dbs.textContent='❌ '+e.message;}
+  }
   try {
     await Promise.all([
       loadProducts().catch(e => console.error('Products:', e)),
@@ -2524,11 +2525,15 @@ async function loadPurchaseOrders() {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text-light)">Not connected to database</td></tr>';
     return;
   }
-  const { data } = await db.from('purchase_orders')
-    .select('id,po_number,status,order_date,invoice_currency,exchange_rate_to_gbp,subtotal_gbp,freight_cost_gbp,customs_duty_gbp,import_vat_gbp,clearing_agent_fee_gbp,port_handling_gbp,other_charges_gbp,total_landed_cost_gbp,suppliers(name)')
-    .not('status','eq','CANCELLED')
-    .order('created_at',{ascending:false})
-    .limit(100);
+  let data = null;
+  try {
+    data = await sbGet('purchase_orders', {
+      select: 'id,po_number,status,order_date,invoice_currency,exchange_rate_to_gbp,subtotal_gbp,freight_cost_gbp,customs_duty_gbp,import_vat_gbp,clearing_agent_fee_gbp,port_handling_gbp,other_charges_gbp,total_landed_cost_gbp,suppliers(name)',
+      not: [{col:'status', op:'eq', val:'CANCELLED'}],
+      order: 'order_date.desc',
+      limit: 100
+    });
+  } catch(e) { console.error('loadPurchaseOrders:', e.message); }
 
   if(!data||!data.length) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-light)">No purchase orders yet — click <strong>New Purchase Order</strong></td></tr>';
@@ -2586,8 +2591,8 @@ async function loadPurchaseOrders() {
 
 async function viewPO(id) {
   if(!db) return;
-  const {data:po}    = await db.from('purchase_orders').select('*, suppliers(*)').eq('id',id).single();
-  const {data:lines} = await db.from('purchase_order_lines').select('*, products(name,sku)').eq('purchase_order_id',id).order('line_number');
+  const poArr = await sbGet('purchase_orders',{select:'*,suppliers(*)',filters:[{col:'id',op:'eq',val:id}],limit:1}); const po = poArr?.[0];
+  const lines = await sbGet('purchase_order_lines',{select:'*,products(name,sku)',filters:[{col:'purchase_order_id',op:'eq',val:id}],order:'line_number'}).catch(()=>[]);
   if(!po) return;
   currentPO = po; currentPOLines = lines||[];
   renderPOView(po, lines||[]);
@@ -2705,8 +2710,8 @@ function renderPOView(po, lines) {
 
 async function editPO(id) {
   if(!db) return;
-  const {data:po}    = await db.from('purchase_orders').select('*, suppliers(name)').eq('id',id).single();
-  const {data:lines} = await db.from('purchase_order_lines').select('*, products(name,sku)').eq('purchase_order_id',id).order('line_number');
+  const poArr2 = await sbGet('purchase_orders',{select:'*,suppliers(name)',filters:[{col:'id',op:'eq',val:id}],limit:1}); const po = poArr2?.[0];
+  const editLines = await sbGet('purchase_order_lines',{select:'*,products(name,sku)',filters:[{col:'purchase_order_id',op:'eq',val:id}],order:'line_number'}).catch(()=>[]); const lines = editLines;
   if(!po) return;
   currentPO = po; currentPOLines = lines||[];
   populatePOEditForm(po, lines||[]);
@@ -2829,7 +2834,7 @@ async function savePOEdit() {
   const other    = parseFloat(document.getElementById('epo-other')?.value||0);
   const total    = sub + freight + customs + impvat + clearing + port + other;
 
-  const {error} = await db.from('purchase_orders').update({
+  await sbPatch('purchase_orders',{
     status: document.getElementById('epo-status')?.value,
     order_date: document.getElementById('epo-order-date')?.value,
     expected_ship_date: document.getElementById('epo-ship-date')?.value||null,
@@ -2852,9 +2857,9 @@ async function savePOEdit() {
   if(error) { showToast('Error: '+error.message); return; }
 
   // Replace lines
-  await db.from('purchase_order_lines').delete().eq('purchase_order_id', id);
+  await fetch(SUPABASE_URL+'/rest/v1/purchase_order_lines?purchase_order_id=eq.'+id,{method:'DELETE',headers:{'apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON}});
   const cleanLines = lines.map(({id:lid, ...rest}) => rest);
-  if(cleanLines.length) await db.from('purchase_order_lines').insert(cleanLines);
+  if(cleanLines.length) await sbPost('purchase_order_lines',cleanLines);
 
   showToast('Purchase order updated');
   closeModal('modal-edit-po');
@@ -2864,7 +2869,7 @@ async function savePOEdit() {
 async function deletePO(id, number) {
   if(!confirm('Cancel purchase order '+number+'?')) return;
   if(!db) return;
-  const {error} = await db.from('purchase_orders').update({status:'CANCELLED'}).eq('id',id);
+  await sbPatch('purchase_orders',{status:'CANCELLED'},'id',id);
   if(error) { showToast('Error: '+error.message); return; }
   showToast('PO '+number+' cancelled');
   await loadPurchaseOrders();
@@ -2876,11 +2881,19 @@ async function savePurchaseOrder() {
   const suppId = document.getElementById('po-supplier-sel')?.value;
   if(!suppId) { showToast('Select a supplier'); return; }
 
-  const {data:settings} = await db.from('company_settings').select('po_prefix,po_next_number').limit(1).single();
-  const prefix = settings?.po_prefix||'PO-';
-  const num    = settings?.po_next_number||1001;
-  const poNum  = prefix+num;
+  const lines = getPONewLines();
+  if(!lines.length) { showToast('Add at least one order item'); return; }
 
+  // Get next PO number via REST
+  let prefix = 'PO-', num = 1001;
+  try {
+    const settings = await sbGet('company_settings', {select:'id,po_prefix,po_next_number', limit:1});
+    if(settings?.[0]) { prefix = settings[0].po_prefix||'PO-'; num = settings[0].po_next_number||1001; }
+  } catch(e) {}
+  const poNum = prefix + num;
+
+  const rate     = parseFloat(document.getElementById('po-rate')?.value||1);
+  const currency = document.getElementById('po-currency')?.value||'INR';
   const freight  = parseFloat(document.getElementById('po-freight')?.value||0);
   const customs  = parseFloat(document.getElementById('po-customs')?.value||0);
   const impvat   = parseFloat(document.getElementById('po-impvat')?.value||0);
@@ -2888,28 +2901,55 @@ async function savePurchaseOrder() {
   const port     = parseFloat(document.getElementById('po-port')?.value||0);
   const other    = parseFloat(document.getElementById('po-other-cost')?.value||0);
 
-  const {data:po, error} = await db.from('purchase_orders').insert({
-    po_number: poNum,
-    supplier_id: suppId,
-    status: 'DRAFT',
-    invoice_currency: document.getElementById('po-currency')?.value||'INR',
-    exchange_rate_to_gbp: parseFloat(document.getElementById('po-rate')?.value||1),
-    order_date: document.getElementById('po-order-date')?.value||new Date().toISOString().split('T')[0],
-    supplier_invoice_ref: document.getElementById('po-inv-ref-field')?.value||null,
-    shipping_method: document.getElementById('po-ship-method')?.value||'Sea Freight',
-    freight_cost_gbp: freight, customs_duty_gbp: customs,
-    import_vat_gbp: impvat, clearing_agent_fee_gbp: clearing,
-    port_handling_gbp: port, other_charges_gbp: other,
-    subtotal_gbp: 0, total_landed_cost_gbp: freight+customs+impvat+clearing+port+other,
-    cost_distribution: 'BY_VALUE',
-  }).select().single();
+  // Calculate product cost in GBP
+  let subtotalForeign = 0;
+  lines.forEach(l => { subtotalForeign += l.qty * l.unit_price; });
+  const subtotalGBP = currency === 'GBP' ? subtotalForeign : subtotalForeign / rate;
+  const totalLanded = subtotalGBP + freight + customs + impvat + clearing + port + other;
 
-  if(error) { showToast('Error: '+error.message); return; }
-  await db.from('company_settings').update({po_next_number: num+1}).eq('id', settings?.id||'');
-  showToast('Purchase order '+poNum+' created');
-  closeModal('modal-po');
-  await loadPurchaseOrders();
+  try {
+    const poData = await sbPost('purchase_orders', {
+      po_number: poNum, supplier_id: suppId, status: 'DRAFT',
+      invoice_currency: currency, exchange_rate_to_gbp: rate,
+      order_date: document.getElementById('po-order-date')?.value || new Date().toISOString().split('T')[0],
+      supplier_invoice_ref: document.getElementById('po-inv-ref-field')?.value||null,
+      shipping_method: document.getElementById('po-ship-method')?.value||'Sea Freight',
+      freight_cost_gbp: freight, customs_duty_gbp: customs,
+      import_vat_gbp: impvat, clearing_agent_fee_gbp: clearing,
+      port_handling_gbp: port, other_charges_gbp: other,
+      subtotal_gbp: subtotalGBP, total_landed_cost_gbp: totalLanded
+    });
+    const po = Array.isArray(poData) ? poData[0] : poData;
+    if(!po?.id) throw new Error('PO not created');
+
+    // Save PO lines
+    if(lines.length) {
+      await sbPost('purchase_order_lines', lines.map((l,i) => ({
+        purchase_order_id: po.id, line_number: i+1,
+        product_id: l.product_id||null, description: l.name,
+        qty: l.qty, unit_price_foreign: l.unit_price,
+        unit_price_gbp: currency==='GBP' ? l.unit_price : l.unit_price/rate,
+        line_total_foreign: l.qty*l.unit_price,
+        line_total_gbp: (l.qty*l.unit_price) / (currency==='GBP'?1:rate)
+      })));
+    }
+
+    // Increment PO number
+    try {
+      const settings = await sbGet('company_settings',{select:'id',limit:1});
+      if(settings?.[0]?.id) await sbPatch('company_settings',{po_next_number:num+1},'id',settings[0].id);
+    } catch(e) {}
+
+    showToast('✓ Purchase Order ' + poNum + ' created');
+    closeModal('modal-po');
+    resetPOModal();
+    loadPurchaseOrders();
+  } catch(e) {
+    showToast('Error saving PO: ' + e.message);
+    console.error('savePO:', e);
+  }
 }
+
 
 // ═══════════════════════════════════════════════════
 // PDF DOWNLOAD
@@ -3098,8 +3138,8 @@ let editLineCounter = 0;
 
 async function editInvoice(id) {
   if(!db) { showToast('Not connected'); return; }
-  const {data:inv}   = await db.from('invoices').select('*, customers(name)').eq('id',id).single();
-  const {data:lines} = await db.from('invoice_lines').select('*, products(name,sku,vat_rate)').eq('invoice_id',id).order('line_number');
+  const invArr2 = await sbGet('invoices',{select:'*,customers(name)',filters:[{col:'id',op:'eq',val:id}],limit:1}); const inv = invArr2?.[0];
+  const lines = await sbGet('invoice_lines',{select:'*,products(name,sku,vat_rate)',filters:[{col:'invoice_id',op:'eq',val:id}],order:'line_number'}).catch(()=>[]);
   if(!inv) return;
   editInvoiceLines = lines || [];
   editLineCounter = 0;
@@ -3229,7 +3269,7 @@ async function saveInvoiceEdit() {
   else if(paid > 0 && paid < total) finalStatus = 'PARTIAL';
 
   // Update invoice header
-  const {error} = await db.from('invoices').update({
+  await sbPatch('invoices',{
     status:finalStatus, invoice_date:invDate, due_date:dueDate,
     delivery_date:delivery||null, notes,
     subtotal_gbp:sub, vat_total_gbp:vatAmt, total_gbp:total, amount_paid_gbp:paid
@@ -3237,15 +3277,15 @@ async function saveInvoiceEdit() {
   if(error) { showToast('Error: '+error.message); return; }
 
   // Replace all line items
-  await db.from('invoice_lines').delete().eq('invoice_id',id);
-  if(newLines.length) await db.from('invoice_lines').insert(newLines);
+  await fetch(SUPABASE_URL+'/rest/v1/invoice_lines?invoice_id=eq.'+id,{method:'DELETE',headers:{'apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON}});
+  if(newLines.length) await sbPost('invoice_lines',newLines);
 
   // Record new payment if amount increased
-  const {data:oldInv} = await db.from('invoices').select('amount_paid_gbp,customer_id').eq('id',id).single();
+  const oldInvArr = await sbGet('invoices',{select:'id,amount_paid_gbp,customer_id',filters:[{col:'id',op:'eq',val:id}],limit:1}); const oldInv = oldInvArr?.[0];
   const prevPaid = parseFloat(oldInv?.amount_paid_gbp||0);
   const newPmt   = paid - prevPaid;
   if(newPmt > 0) {
-    await db.from('payments').insert({
+    await sbPost('payments',{
       invoice_id:id, customer_id:oldInv.customer_id,
       amount_gbp:newPmt, payment_date:document.getElementById('edit-inv-pay-date').value,
       method, reference:ref
@@ -3323,8 +3363,7 @@ async function loadQuickInvoice(sel) {
   if(!db) { document.getElementById('qi-loading').style.display='none'; document.getElementById('qi-empty').style.display='block'; return; }
 
   // Get most recent invoice for this customer
-  const {data:invs} = await db.from('invoices').select('id,invoice_number,invoice_date').eq('customer_id',custId)
-    .not('status','eq','CANCELLED').order('invoice_date',{ascending:false}).limit(1);
+  const invs = await sbGet('invoices',{select:'id,invoice_number,invoice_date',filters:[{col:'customer_id',op:'eq',val:custId}],not:[{col:'status',op:'eq',val:'CANCELLED'}],order:'invoice_date.desc',limit:1}).catch(()=>[]);
 
   if(!invs||!invs.length) {
     document.getElementById('qi-loading').style.display='none';
@@ -3343,7 +3382,7 @@ async function loadQuickInvoice(sel) {
   document.getElementById('qi-based-on').value = lastInv.invoice_number+' ('+fmtDate(lastInv.invoice_date)+')';
 
   // Load lines from last invoice
-  const {data:lines} = await db.from('invoice_lines').select('*, products(name,sku)').eq('invoice_id',lastInv.id).order('line_number');
+  const linesHist = await sbGet('invoice_lines',{select:'*,products(name,sku)',filters:[{col:'invoice_id',op:'eq',val:lastInv.id}],order:'line_number'}).catch(()=>[]);
   document.getElementById('qi-loading').style.display='none';
   document.getElementById('qi-empty').style.display='none';
   document.getElementById('qi-lines-wrap').style.display='block';
@@ -3438,13 +3477,12 @@ async function saveQuickInvoice() {
 
   if(!lines.length) { showToast('Add at least one line with a quantity'); return; }
 
-  const {data:settings} = await db.from('company_settings')
-    .select('id,invoice_prefix,invoice_next_number').limit(1).single();
+  const settArr = await sbGet('company_settings',{select:'id,invoice_prefix,invoice_next_number',limit:1}); const settings = settArr?.[0];
   const prefix = settings?.invoice_prefix || 'INV-';
   const num    = settings?.invoice_next_number || 1001;
   const invNum = prefix + num;
 
-  const {data:inv, error} = await db.from('invoices').insert({
+  const invQIData = await sbPost('invoices',{
     invoice_number: invNum,
     customer_id: qiCustomerId,
     status: 'DRAFT',
@@ -3462,13 +3500,11 @@ async function saveQuickInvoice() {
 
   // Save line items
   const lineData = lines.map(l => ({ ...l, invoice_id: inv.id }));
-  const {error: lineErr} = await db.from('invoice_lines').insert(lineData);
+  await sbPost('invoice_lines',lineData);
   if(lineErr) { showToast('Invoice saved but lines failed: ' + lineErr.message); }
 
   // Increment invoice number
-  await db.from('company_settings')
-    .update({ invoice_next_number: num + 1 })
-    .eq('id', settings?.id || '');
+  if(settings?.id) await sbPatch('company_settings',{invoice_next_number:num+1},'id',settings.id);
 
   showToast('Invoice ' + invNum + ' created ⚡');
   closeModal('modal-quick-invoice');
@@ -3482,8 +3518,8 @@ async function saveQuickInvoice() {
 async function openInvoice(id) {
   if(!db) { showToast('Not connected'); return; }
   // Load invoice + lines
-  const { data: inv } = await db.from('invoices').select('*, customers(*)').eq('id',id).single();
-  const { data: lines } = await db.from('invoice_lines').select('*, products(name,sku)').eq('invoice_id',id).order('line_number');
+  const invArr3 = await sbGet('invoices',{select:'*,customers(*)',filters:[{col:'id',op:'eq',val:id}],limit:1}); const inv = invArr3?.[0];
+  const lines2 = await sbGet('invoice_lines',{select:'*,products(name,sku)',filters:[{col:'invoice_id',op:'eq',val:id}],order:'line_number'}).catch(()=>[]); const lines = lines2;
   if(!inv) { showToast('Invoice not found'); return; }
   currentInvoice = inv;
   currentInvoiceLines = lines || [];
@@ -3608,7 +3644,7 @@ function renderInvoicePreview(inv, lines) {
 
 async function markInvoiceSent() {
   if(!currentInvoice) return;
-  if(db) await db.from('invoices').update({status:'SENT', sent_at:new Date().toISOString()}).eq('id',currentInvoice.id);
+  await sbPatch('invoices',{status:'SENT',sent_at:new Date().toISOString()},'id',currentInvoice.id);
   showToast('Invoice marked as Sent');
   closeModal('modal-inv-preview');
   await loadInvoices();
@@ -3959,6 +3995,7 @@ function addInvoiceLine() {
 
 function onProductSelect(lineId, sel) {
   const productId = sel.value;
+  if(productId === '__new__') { sel.value = ''; openQuickAddProduct(lineId); return; }
   const wrap = document.querySelector(`[data-line-id="${lineId}"]`);
   wrap.dataset.product = productId;
   if(!productId) return;
@@ -4393,43 +4430,35 @@ function getBankDetailsText() {
 }
 
 async function saveSettings() {
-  if(!db) { showToast('Not connected'); return; }
-  const {data:s} = await db.from('company_settings').select('id').limit(1).single();
-  if(!s) return;
-  const {error} = await db.from('company_settings').update({
-    company_name:   document.getElementById('set-company-name')?.value||'S.MOTIRAM (UK) LIMITED',
-    vat_number:     document.getElementById('set-vat-num')?.value||null,
-    phone:          document.getElementById('set-phone')?.value||null,
-    email:          document.getElementById('set-email')?.value||null,
-    invoice_prefix: document.getElementById('set-inv-prefix')?.value||'INV-',
-    invoice_next_number: parseInt(document.getElementById('set-inv-next')?.value||1001),
-    po_prefix:      document.getElementById('set-po-prefix')?.value||'PO-',
-    po_next_number: parseInt(document.getElementById('set-po-next')?.value||1001),
-  }).eq('id', s.id);
-  if(error) { showToast('Error: '+error.message); return; }
-  // Update bank preview
-  const sort = document.getElementById('set-sort-code')?.value||'XX-XX-XX';
-  const acc  = document.getElementById('set-account-no')?.value||'XXXXXXXX';
-  const bpSort = document.getElementById('bp-sort'); if(bpSort) bpSort.textContent = sort;
-  const bpAcc  = document.getElementById('bp-acc');  if(bpAcc)  bpAcc.textContent  = acc;
-  showToast('Settings saved successfully');
+  try {
+    const settings = await sbGet('company_settings',{select:'id',limit:1});
+    const sid = settings?.[0]?.id;
+    const payload = {
+      company_name:        document.getElementById('set-company-name')?.value||'S MOTIRAM (UK) LTD',
+      vat_number:          document.getElementById('set-vat-num')?.value||null,
+      phone:               document.getElementById('set-phone')?.value||null,
+      email:               document.getElementById('set-email')?.value||null,
+      invoice_prefix:      document.getElementById('set-inv-prefix')?.value||'INV-',
+      invoice_next_number: parseInt(document.getElementById('set-inv-next')?.value||1001),
+      po_prefix:           document.getElementById('set-po-prefix')?.value||'PO-',
+      po_next_number:      parseInt(document.getElementById('set-po-next')?.value||1001),
+      bank_name:           document.getElementById('set-bank-name')?.value||null,
+      bank_sort_code:      document.getElementById('set-sort-code')?.value||null,
+      bank_account_no:     document.getElementById('set-account-no')?.value||null,
+      payment_terms_days:  parseInt(document.getElementById('set-pay-terms')?.value||30),
+    };
+    if(sid) {
+      await sbPatch('company_settings', payload, 'id', sid);
+    } else {
+      await sbPost('company_settings', payload);
+    }
+    showToast('✓ Settings saved');
+  } catch(e) {
+    showToast('Error saving settings: ' + e.message);
+    console.error('saveSettings:', e);
+  }
 }
 
-// Update bank preview live
-document.addEventListener('DOMContentLoaded', function() {
-  ['set-sort-code','set-account-no'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.addEventListener('input', function() {
-      const sort = document.getElementById('set-sort-code')?.value||'XX-XX-XX';
-      const acc  = document.getElementById('set-account-no')?.value||'XXXXXXXX';
-      const bpSort = document.getElementById('bp-sort'); if(bpSort) bpSort.textContent = sort;
-      const bpAcc  = document.getElementById('bp-acc');  if(bpAcc)  bpAcc.textContent  = acc;
-    });
-  });
-});
-
-// Update PDF to include bank details
-const _origGetInvoiceText = window.getInvoiceText;
 
 // ═══════════════════════════════════════════════════
 // EXCEL IMPORT ENGINE
@@ -5018,18 +5047,20 @@ async function loadExportPreview() {
   showToast('Loading preview…');
 
   // Load invoices
-  const {data:invs} = await db.from('invoices')
-    .select('*, customers(name), invoice_lines(*)')
-    .gte('invoice_date', from).lte('invoice_date', to)
-    .not('status','eq','CANCELLED')
-    .order('invoice_date');
+  const invs = await sbGet('invoices',{
+      select:'*,customers(name),invoice_lines(*)',
+      filters:[{col:'invoice_date',op:'gte',val:from},{col:'invoice_date',op:'lte',val:to}],
+      not:[{col:'status',op:'eq',val:'CANCELLED'}],
+      order:'invoice_date'
+    });
 
   // Load purchase orders
-  const {data:pos} = await db.from('purchase_orders')
-    .select('*, suppliers(name), purchase_order_lines(*)')
-    .gte('order_date', from).lte('order_date', to)
-    .not('status','eq','CANCELLED')
-    .order('order_date');
+  const pos = await sbGet('purchase_orders',{
+      select:'*,suppliers(name),purchase_order_lines(*)',
+      filters:[{col:'order_date',op:'gte',val:from},{col:'order_date',op:'lte',val:to}],
+      not:[{col:'status',op:'eq',val:'CANCELLED'}],
+      order:'order_date'
+    });
 
   exportData.invoices  = invs  || [];
   exportData.purchases = pos   || [];
@@ -5410,7 +5441,6 @@ async function fetchUKHolidays() {
 
 async function loadCalendarEvents() {
   calEvents = {};
-  if(!db) return;
 
   const addEvent = (date, type, label, color, id) => {
     if(!date) return;
@@ -5419,75 +5449,56 @@ async function loadCalendarEvents() {
     calEvents[d].push({ type, label, color, id: id||null });
   };
 
-  // ── Unpaid invoices — due date (blue) ───────────
-  const {data:invsDue} = await db.from('invoices')
-    .select('id,invoice_number,due_date,delivery_date,total_gbp,customers(name)')
-    .not('status','in','("PAID","CANCELLED")')
-    .not('due_date','is',null);
-  (invsDue||[]).forEach(i => {
-    const amt = '£'+parseFloat(i.total_gbp||0).toFixed(0);
-    addEvent(i.due_date, 'invoice_due',
-      i.invoice_number+' DUE — '+( i.customers?.name||'')+' '+amt, '#1d4ed8', i.id);
-    if(i.delivery_date) addEvent(i.delivery_date, 'delivery',
-      'Delivery: '+i.invoice_number+' — '+(i.customers?.name||''), '#15803d', i.id);
-  });
+  try {
+    // Unpaid invoices — due date
+    const invsDue = await sbGet('invoices',{
+      select:'id,invoice_number,due_date,delivery_date,total_gbp,customers(name)',
+      not:[{col:'status',op:'in',val:'("PAID","CANCELLED")'},{col:'due_date',op:'is',val:'null'}]
+    });
+    (invsDue||[]).forEach(i => {
+      const amt = '£'+parseFloat(i.total_gbp||0).toFixed(0);
+      addEvent(i.due_date,'invoice_due',i.invoice_number+' DUE — '+(i.customers?.name||'')+' '+amt,'#1d4ed8',i.id);
+      if(i.delivery_date) addEvent(i.delivery_date,'delivery','Delivery: '+i.invoice_number+' — '+(i.customers?.name||''),'#15803d',i.id);
+    });
+  } catch(e) { console.warn('calendar invoice due:', e); }
 
-  // ── Paid invoices — payment date (green) ────────
-  const {data:invsPaid} = await db.from('invoices')
-    .select('id,invoice_number,updated_at,total_gbp,customers(name)')
-    .eq('status','PAID')
-    .not('updated_at','is',null);
-  (invsPaid||[]).forEach(i => {
-    const payDate = i.updated_at?.split('T')[0];
-    if(!payDate) return;
-    const amt = '£'+parseFloat(i.total_gbp||0).toFixed(0);
-    addEvent(payDate, 'invoice_paid',
-      '✓ PAID: '+i.invoice_number+' — '+(i.customers?.name||'')+' '+amt, '#16a34a', i.id);
-  });
+  try {
+    // Paid invoices
+    const invsPaid = await sbGet('invoices',{
+      select:'id,invoice_number,updated_at,total_gbp,customers(name)',
+      filters:[{col:'status',op:'eq',val:'PAID'}]
+    });
+    (invsPaid||[]).forEach(i => {
+      const payDate = i.updated_at?.split('T')[0];
+      if(!payDate) return;
+      const amt = '£'+parseFloat(i.total_gbp||0).toFixed(0);
+      addEvent(payDate,'invoice_paid','✓ PAID: '+i.invoice_number+' — '+(i.customers?.name||'')+' '+amt,'#16a34a',i.id);
+    });
+  } catch(e) { console.warn('calendar invoice paid:', e); }
 
-  // ── Partial payments — show on today if overdue ─
-  const {data:invsPartial} = await db.from('invoices')
-    .select('id,invoice_number,due_date,balance_due_gbp,customers(name)')
-    .eq('status','PARTIAL')
-    .not('due_date','is',null);
-  (invsPartial||[]).forEach(i => {
-    const bal = '£'+parseFloat(i.balance_due_gbp||0).toFixed(0);
-    addEvent(i.due_date, 'invoice_partial',
-      '⚡ PARTIAL: '+i.invoice_number+' bal '+bal+' — '+(i.customers?.name||''), '#d97706', i.id);
-  });
+  try {
+    // PO expected dates
+    const calPos = await sbGet('purchase_orders',{
+      select:'id,po_number,expected_ship_date,suppliers(name)',
+      not:[{col:'status',op:'in',val:'("RECEIVED","CANCELLED")'},{col:'expected_ship_date',op:'is',val:'null'}]
+    });
+    (calPos||[]).forEach(p => {
+      if(p.expected_ship_date) addEvent(p.expected_ship_date,'po','PO '+p.po_number+' expected — '+(p.suppliers?.name||''),'#7c3aed',p.id);
+    });
+  } catch(e) { console.warn('calendar PO:', e); }
 
-  // ── Purchase orders — expected arrival ──────────
-  const {data:pos} = await db.from('purchase_orders')
-    .select('id,po_number,expected_ship_date,suppliers(name)')
-    .not('status','in','("RECEIVED","CANCELLED")')
-    .not('expected_ship_date','is',null);
-  (pos||[]).forEach(p => {
-    if(p.expected_ship_date) addEvent(p.expected_ship_date, 'po',
-      'PO '+p.po_number+' expected — '+(p.suppliers?.name||''), '#7c3aed', p.id);
-  });
-
-  // ── Calendar notes / reminders ──────────────────
-  // Store in localStorage (no extra DB table needed)
+  // Calendar notes from localStorage
   try {
     const stored = localStorage.getItem('smotiram_cal_notes');
     const notes  = stored ? JSON.parse(stored) : [];
-    const typeColors = {
-      reminder:'#0891b2', payment:'#be185d',
-      supplier:'#92400e', vat:'#5b21b6', personal:'#374151'
-    };
-    const typeIcons = {
-      reminder:'📌', payment:'💰', supplier:'📦', vat:'🏛', personal:'👤'
-    };
+    const typeColors = {reminder:'#0891b2',payment:'#be185d',supplier:'#92400e',vat:'#5b21b6',personal:'#374151'};
+    const typeIcons  = {reminder:'📌',payment:'💰',supplier:'📦',vat:'🏛',personal:'👤'};
     notes.forEach(n => {
-      if(!n.date || !n.text) return;
-      const color = typeColors[n.type] || '#0891b2';
-      const icon  = typeIcons[n.type]  || '📌';
-      addEvent(n.date, 'note', icon+' '+n.text, color, n.id);
+      if(!n.date||!n.text) return;
+      addEvent(n.date,'note',(typeIcons[n.type]||'📌')+' '+n.text,(typeColors[n.type]||'#0891b2'),n.id);
     });
     calNotes = notes;
-  } catch(e) {
-    console.warn('Could not load calendar notes:', e);
-  }
+  } catch(e) { console.warn('calendar notes:', e); }
 }
 
 
@@ -5753,32 +5764,31 @@ async function fetchLiveRate(currency) {
 
     // Save to Supabase for history
     if(db) {
-      db.from('exchange_rates').upsert({
-        from_currency: currency,
-        to_currency: 'GBP',
-        rate: 1/rate,  // store as: 1 unit currency = X GBP
-        rate_date: today,
-        source: 'FRANKFURTER_API'
-      }, { onConflict: 'from_currency,to_currency,rate_date' }).then(()=>{});
+    // db.from('exchange_rates').upsert({ // disabled - use REST
+    // from_currency: currency,
+    // to_currency: 'GBP',
+    // rate: 1/rate,  // store as: 1 unit currency = X GBP
+    // rate_date: today,
+    // source: 'FRANKFURTER_API'
+    // }, { onConflict: 'from_currency,to_currency,rate_date' }).then(()=>{});
     }
     return rate;
   } catch(e) {
     console.warn('Exchange rate fetch failed:', e.message);
     // Fallback to last known rate from DB
-    if(db) {
-      const {data} = await db.from('exchange_rates')
-        .select('rate,rate_date')
-        .eq('from_currency', currency)
-        .eq('to_currency','GBP')
-        .order('rate_date',{ascending:false})
-        .limit(1).single();
-      if(data) {
-        const fallback = 1/data.rate;
+    try {
+      const rateData = await sbGet('exchange_rates',{
+        select:'rate,rate_date',
+        filters:[{col:'from_currency',op:'eq',val:currency},{col:'to_currency',op:'eq',val:'GBP'}],
+        order:'rate_date.desc',limit:1
+      });
+      if(rateData?.[0]) {
+        const fallback = 1/rateData[0].rate;
         rateCache[cacheKey] = fallback;
-        showToast(`Using last known rate from ${data.rate_date}`);
+        showToast('Using last known rate from '+rateData[0].rate_date);
         return fallback;
       }
-    }
+    } catch(e2) {}
     return null;
   }
 }
@@ -5833,21 +5843,17 @@ async function loadRatesForCalendar(year, month) {
   const ratesByDate = {};
 
   // Step 1: Load from Supabase DB (historical saved rates)
-  if(db) {
-    try {
-      const {data} = await db.from('exchange_rates')
-        .select('from_currency,rate,rate_date')
-        .in('from_currency', currencies)
-        .eq('to_currency','GBP')
-        .gte('rate_date', firstDay)
-        .lte('rate_date', lastDay)
-        .order('rate_date');
-      (data||[]).forEach(r => {
-        if(!ratesByDate[r.rate_date]) ratesByDate[r.rate_date] = {};
-        ratesByDate[r.rate_date][r.from_currency] = (1/r.rate).toFixed(2);
-      });
-    } catch(e) { console.warn('DB rates error:', e); }
-  }
+  try {
+    const dbRates = await sbGet('exchange_rates',{
+      select:'from_currency,rate,rate_date',
+      filters:[{col:'to_currency',op:'eq',val:'GBP'},{col:'rate_date',op:'gte',val:firstDay},{col:'rate_date',op:'lte',val:lastDay}],
+      order:'rate_date'
+    });
+    (dbRates||[]).forEach(r => {
+      if(!ratesByDate[r.rate_date]) ratesByDate[r.rate_date] = {};
+      ratesByDate[r.rate_date][r.from_currency] = (1/r.rate).toFixed(2);
+    });
+  } catch(e) { console.warn('DB rates error:', e); }
 
   // Step 2: If viewing current month and today has no rate yet, fetch live from API
   const currentMonth = new Date().getMonth();
@@ -5865,7 +5871,7 @@ async function loadRatesForCalendar(year, month) {
           const saves = [];
           if(data.rates.INR) saves.push({ from_currency:'INR', to_currency:'GBP', rate: 1/data.rates.INR, rate_date: today, source:'FRANKFURTER_API' });
           if(data.rates.USD) saves.push({ from_currency:'USD', to_currency:'GBP', rate: 1/data.rates.USD, rate_date: today, source:'FRANKFURTER_API' });
-          if(saves.length) db.from('exchange_rates').upsert(saves, {onConflict:'from_currency,to_currency,rate_date'}).then(()=>{});
+    // if(saves.length) db.from('exchange_rates').upsert(saves, {onConflict:'from_currency,to_currency,rate_date'}).then(()=>{}); // disabled - use REST
         }
       }
     } catch(e) { console.warn('Live rate fetch error:', e); }
@@ -5900,6 +5906,220 @@ async function onPOCurrencyChange() {
 }
 
 
+
+async function loadProductAnalytics() {
+  const tbody = document.getElementById('analytics-products-body');
+  const lowDiv = document.getElementById('analytics-low-stock');
+  try {
+    const data = await sbGet('products',{select:'id,sku,name,unit,avg_landed_cost_gbp,default_sell_price_gbp,stock_qty,low_stock_threshold,vat_rate',filters:[{col:'is_active',op:'eq',val:'true'}],order:'name'});
+    if(!data||!data.length){
+      if(tbody) tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-light)">No products yet</td></tr>';
+      if(lowDiv) lowDiv.innerHTML='<span style="color:var(--text-light)">No products yet</span>';
+      return;
+    }
+    if(tbody) tbody.innerHTML=data.map(p=>{
+      const sv=(parseFloat(p.stock_qty)||0)*(parseFloat(p.avg_landed_cost_gbp)||0);
+      const low=parseFloat(p.stock_qty||0)<=parseFloat(p.low_stock_threshold||10);
+      const vat=(p.vat_rate===0||p.vat_rate>0)?p.vat_rate:20;
+      return `<tr><td><strong>${p.name}</strong></td><td class="mono" style="font-size:11px">${p.sku}</td>
+        <td class="mono" style="color:${low?'var(--warning)':'inherit'};font-weight:${low?'600':'400'}">${p.stock_qty||0} ${p.unit||'pcs'}</td>
+        <td class="mono">£${parseFloat(p.avg_landed_cost_gbp||0).toFixed(2)}</td>
+        <td class="mono">£${parseFloat(p.default_sell_price_gbp||0).toFixed(2)}</td>
+        <td><span class="badge badge-active">${vat}%</span></td>
+        <td class="mono">£${sv.toFixed(2)}</td></tr>`;
+    }).join('');
+    const low=data.filter(p=>parseFloat(p.stock_qty||0)<=parseFloat(p.low_stock_threshold||10));
+    if(lowDiv) lowDiv.innerHTML=!low.length?'<span style="color:var(--success)">✓ All products adequately stocked</span>':
+      low.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span><strong>${p.name}</strong> <span style="font-size:11px;color:var(--text-light)">${p.sku}</span></span><span style="color:var(--warning);font-weight:600">${p.stock_qty} ${p.unit||'pcs'} left</span></div>`).join('');
+  } catch(e) { console.error('analytics products:',e); if(tbody) tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--danger)">Error: '+e.message+'</td></tr>'; }
+}
+
+async function loadCustomerAnalytics() {
+  const div=document.getElementById('analytics-customers-body');
+  if(div) div.innerHTML='<div style="padding:16px;color:var(--text-light)">Loading…</div>';
+  try {
+    const custs=await sbGet('customers',{select:'id,name,payment_terms_days,price_tier_id,price_tiers(name)',filters:[{col:'is_active',op:'eq',val:'true'}],order:'name'});
+    const invs=await sbGet('invoices',{select:'customer_id,total_gbp,balance_due_gbp,status',not:[{col:'status',op:'eq',val:'CANCELLED'}]});
+    if(!custs||!custs.length){if(div) div.innerHTML='<div style="padding:16px;color:var(--text-light)">No customers yet</div>';return;}
+    const totals={};
+    (invs||[]).forEach(i=>{if(!totals[i.customer_id])totals[i.customer_id]={total:0,count:0,unpaid:0};totals[i.customer_id].total+=parseFloat(i.total_gbp||0);totals[i.customer_id].count++;if(i.status!=='PAID')totals[i.customer_id].unpaid+=parseFloat(i.balance_due_gbp||0);});
+    if(div) div.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Customer</th><th>Tier</th><th>Invoices</th><th>Total Spent</th><th>Outstanding</th><th>Terms</th></tr></thead><tbody>${custs.map(c=>{const t=totals[c.id]||{total:0,count:0,unpaid:0};return`<tr><td><strong>${c.name}</strong></td><td><span class="badge badge-sent">${c.price_tiers?.name||'Retail'}</span></td><td class="mono">${t.count}</td><td class="mono">£${t.total.toFixed(2)}</td><td class="mono" style="color:${t.unpaid>0?'var(--warning)':'var(--success)'}">${t.unpaid>0?'£'+t.unpaid.toFixed(2):'✓ Clear'}</td><td class="mono">${c.payment_terms_days||30}d</td></tr>`;}).join('')}</tbody></table></div>`;
+  } catch(e){console.error('analytics customers:',e);}
+}
+
+async function loadReceivables() {
+  const tbody=document.getElementById('analytics-receivables-body');
+  if(tbody) tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px">Loading…</td></tr>';
+  try {
+    const data=await sbGet('invoices',{select:'invoice_number,invoice_date,due_date,total_gbp,balance_due_gbp,status,customers(name)',not:[{col:'status',op:'in',val:'("PAID","CANCELLED","DRAFT")'}],order:'due_date'});
+    if(!data||!data.length){if(tbody)tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--success)">✓ No outstanding receivables</td></tr>';return;}
+    const today=new Date();
+    if(tbody) tbody.innerHTML=data.map(inv=>{const days=Math.floor((today-new Date(inv.due_date))/86400000);const over=days>0;return`<tr><td><strong>${inv.customers?.name||'—'}</strong></td><td class="mono">${inv.invoice_number}</td><td class="mono">${fmtDate(inv.invoice_date)}</td><td class="mono" style="color:${over?'var(--danger)':'inherit'}">${fmtDate(inv.due_date)}</td><td class="mono">£${parseFloat(inv.balance_due_gbp||inv.total_gbp||0).toFixed(2)}</td><td class="mono" style="color:${over?'var(--danger)':'var(--success)'};font-weight:${over?'700':'400'}">${over?days+' days overdue':'Due in '+Math.abs(days)+' days'}</td><td><span class="badge badge-${(inv.status||'draft').toLowerCase()}">${inv.status}</span></td></tr>`;}).join('');
+  } catch(e){console.error('receivables:',e);}
+}
+
+
+// ═══════════════════════════════════════════════════
+// PO LINE MANAGEMENT (New PO modal)
+// ═══════════════════════════════════════════════════
+let poNewLineCounter = 0;
+
+function addPOLine(prefill) {
+  poNewLineCounter++;
+  const id  = 'pnl_' + poNewLineCounter;
+  const currency = document.getElementById('po-currency')?.value || 'INR';
+  const symbol   = currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '₹';
+
+  // Build product options from PRODUCTS cache
+  const prodOpts = Object.entries(PRODUCTS).map(([k,v]) =>
+    `<option value="${k}" ${prefill?.product_id===k?'selected':''}>${v.name} (${v.sku})</option>`
+  ).join('');
+
+  const div = document.createElement('div');
+  div.id = 'pnlwrap_' + id;
+  div.style.cssText = 'display:grid;grid-template-columns:3fr 1fr 1.5fr 1.5fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)';
+  div.innerHTML = `
+    <select id="pnlprod_${id}" onchange="onPOProductSelect('${id}',this)" style="font-size:13px">
+      <option value="">— Select product —</option>
+      <option value="__new__">✚ Add new product…</option>
+      ${prodOpts}
+    </select>
+    <input type="number" id="pnlqty_${id}" value="${prefill?.qty||1}" min="0.01" step="0.01"
+      style="width:70px" onchange="recalcPONewLine('${id}')" placeholder="Qty"/>
+    <div style="display:flex;align-items:center;gap:4px">
+      <span style="font-size:12px;color:var(--text-light)">${symbol}</span>
+      <input type="number" id="pnlprice_${id}" value="${prefill?.unit_price||''}" step="0.01"
+        style="width:90px" onchange="recalcPONewLine('${id}')" placeholder="Unit price"/>
+    </div>
+    <span id="pnltotal_${id}" class="mono" style="font-size:12px;color:var(--text-light)">—</span>
+    <button onclick="document.getElementById('pnlwrap_${id}').remove();recalcPONewTotal()"
+      style="background:none;border:1px solid var(--danger);color:var(--danger);border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:14px;line-height:1">✕</button>
+  `;
+  document.getElementById('po-new-lines').appendChild(div);
+  if(prefill?.product_id) { recalcPONewLine(id); }
+}
+
+function onPOProductSelect(id, sel) {
+  if(sel.value === '__new__') {
+    sel.value = '';
+    openQuickAddProduct('PO:' + id); // special prefix to know it's for PO
+    return;
+  }
+  recalcPONewLine(id);
+}
+
+function recalcPONewLine(id) {
+  const qty   = parseFloat(document.getElementById('pnlqty_'+id)?.value||0);
+  const price = parseFloat(document.getElementById('pnlprice_'+id)?.value||0);
+  const total = qty * price;
+  const currency = document.getElementById('po-currency')?.value || 'INR';
+  const symbol   = currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '₹';
+  const el = document.getElementById('pnltotal_'+id);
+  if(el) el.textContent = total > 0 ? symbol + total.toFixed(2) : '—';
+  recalcPONewTotal();
+}
+
+function recalcPONewTotal() {
+  let total = 0;
+  document.querySelectorAll('#po-new-lines > div').forEach(div => {
+    const id  = div.id.replace('pnlwrap_','');
+    const qty   = parseFloat(document.getElementById('pnlqty_'+id)?.value||0);
+    const price = parseFloat(document.getElementById('pnlprice_'+id)?.value||0);
+    total += qty * price;
+  });
+  const currency = document.getElementById('po-currency')?.value || 'INR';
+  const symbol   = currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '₹';
+  const el = document.getElementById('po-new-total');
+  if(el) el.textContent = total > 0 ? 'Items total: ' + symbol + total.toFixed(2) : '';
+}
+
+function getPONewLines() {
+  const lines = [];
+  document.querySelectorAll('#po-new-lines > div').forEach(div => {
+    const id    = div.id.replace('pnlwrap_','');
+    const pid   = document.getElementById('pnlprod_'+id)?.value;
+    const qty   = parseFloat(document.getElementById('pnlqty_'+id)?.value||0);
+    const price = parseFloat(document.getElementById('pnlprice_'+id)?.value||0);
+    if(!qty) return;
+    lines.push({ product_id: pid||null, qty, unit_price: price,
+      name: pid ? PRODUCTS[pid]?.name||'' : '' });
+  });
+  return lines;
+}
+
+function resetPOModal() {
+  poNewLineCounter = 0;
+  const linesEl = document.getElementById('po-new-lines');
+  if(linesEl) linesEl.innerHTML = '';
+  const totalEl = document.getElementById('po-new-total');
+  if(totalEl) totalEl.textContent = '';
+}
+
+
+function openQuickAddProduct(lineId) {
+  ['qap-sku','qap-name','qap-buy','qap-sell'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const s=document.getElementById('qap-stock'); if(s) s.value='0';
+  const l=document.getElementById('qap-line-id'); if(l) l.value=lineId||'';
+  showModal('modal-quick-product');
+  setTimeout(()=>document.getElementById('qap-sku')?.focus(),200);
+}
+
+async function saveQuickAddProduct() {
+  const sku  = document.getElementById('qap-sku')?.value?.trim();
+  const name = document.getElementById('qap-name')?.value?.trim();
+  if(!sku||!name) { showToast('SKU and Name required'); return; }
+  const unit  = document.getElementById('qap-unit')?.value||'pcs';
+  const buy   = parseFloat(document.getElementById('qap-buy')?.value||0);
+  const sell  = parseFloat(document.getElementById('qap-sell')?.value||0);
+  const vat   = parseFloat(document.getElementById('qap-vat')?.value??20);
+  const stock = parseFloat(document.getElementById('qap-stock')?.value||0);
+  const lineId = document.getElementById('qap-line-id')?.value||'';
+  const vatType = vat===0?'ZERO':vat===5?'REDUCED':'STANDARD';
+  try {
+    const data = await sbPost('products',{
+      sku,name,unit,avg_landed_cost_gbp:buy||null,default_sell_price_gbp:sell||null,
+      stock_qty:stock,vat_rate:vat,vat_type:vatType,is_active:true,
+      country_of_origin:'India',low_stock_threshold:10
+    });
+    const prod = Array.isArray(data)?data[0]:data;
+    if(!prod?.id) throw new Error('Product not created');
+    PRODUCTS[prod.id]={id:prod.id,sku,name,unit,defaultPrice:sell,landed:buy,vat,stock,lowStock:10,hs:'',barcode:'',category:''};
+    if(stock>0) await sbPost('stock_movements',{product_id:prod.id,movement_type:'OPENING',qty:stock,stock_after:stock});
+    showToast('✓ '+name+' added to catalogue');
+    closeModal('modal-quick-product');
+    // Add to the line that triggered this
+    if(lineId.startsWith('PO:')) {
+      // It's a PO line
+      const poId = lineId.replace('PO:','');
+      const sel = document.getElementById('pnlprod_'+poId);
+      if(sel) {
+        const opt=document.createElement('option'); opt.value=prod.id; opt.textContent=name+' ('+sku+')';
+        sel.appendChild(opt); sel.value=prod.id; recalcPONewLine(poId);
+      }
+    } else {
+      // It's an invoice line
+      const wrap = document.querySelector('[data-line-id="'+lineId+'"]');
+      if(wrap) {
+        const sel=wrap.querySelector('select');
+        if(sel) {
+          const opt=document.createElement('option'); opt.value=prod.id; opt.textContent=name+' — £'+sell.toFixed(2);
+          sel.appendChild(opt); sel.value=prod.id; onProductSelect(lineId,sel);
+        }
+      }
+    }
+  } catch(e) { showToast('Error: '+e.message); console.error('quickAdd:',e); }
+}
+
+
+function filterProductsByCategory(cat) {
+  const rows = document.querySelectorAll('#products-table tr');
+  rows.forEach(row => {
+    if(!cat) { row.style.display = ''; return; }
+    const catCell = row.cells?.[2];
+    const match = catCell && catCell.textContent.trim() === cat;
+    row.style.display = match ? '' : 'none';
+  });
+}
 </script>
 </body>
 <!-- v20260423-102130 -->
