@@ -3539,7 +3539,6 @@ async function saveQuickInvoice() {
     status: 'DRAFT',
     invoice_date: document.getElementById('qi-date')?.value || new Date().toISOString().split('T')[0],
     due_date: document.getElementById('qi-due')?.value || null,
-    delivery_date: document.getElementById('qi-delivery')?.value || null,
     notes: document.getElementById('qi-notes')?.value || null,
     subtotal_gbp: sub,
     vat_total_gbp: vatAmt,
@@ -5541,7 +5540,7 @@ async function loadCalendarEvents() {
   try {
     // Unpaid invoices — due date
     const invsDue = await sbGet('invoices',{
-      select:'id,invoice_number,due_date,delivery_date,total_gbp,customers(name)',
+      select:'id,invoice_number,due_date,total_gbp,customers(name)',
       not:[{col:'status',op:'in',val:'("PAID","CANCELLED")'},{col:'due_date',op:'is',val:'null'}]
     });
     (invsDue||[]).forEach(i => {
