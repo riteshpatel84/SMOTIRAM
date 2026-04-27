@@ -963,7 +963,23 @@
       </div>
       <div class="form-group"><label>Product Name *</label><input id="new-name" placeholder="Full product name"/></div>
       <div class="form-row form-row-3">
-        <div class="form-group"><label>Category</label><select><option>General</option><option>Textiles</option><option>Clothing</option><option>Accessories</option></select></div>
+        <div class="form-group"><label>Category</label>
+        <select id="new-category">
+          <option value="Snacks & Namkeen">Snacks &amp; Namkeen</option>
+          <option value="Sweets & Mithai">Sweets &amp; Mithai</option>
+          <option value="Pickles & Chutneys">Pickles &amp; Chutneys</option>
+          <option value="Drinks & Beverages">Drinks &amp; Beverages</option>
+          <option value="Canned & Tinned">Canned &amp; Tinned</option>
+          <option value="Spices & Masala">Spices &amp; Masala</option>
+          <option value="Rice & Grains">Rice &amp; Grains</option>
+          <option value="Flour & Baking">Flour &amp; Baking</option>
+          <option value="Oils & Ghee">Oils &amp; Ghee</option>
+          <option value="Dry Fruits & Nuts">Dry Fruits &amp; Nuts</option>
+          <option value="Papad & Fryums">Papad &amp; Fryums</option>
+          <option value="Frozen Foods">Frozen Foods</option>
+          <option value="Puja & Incense">Puja &amp; Incense</option>
+          <option value="General">General</option>
+        </select></div>
         <div class="form-group"><label>Unit</label><select id="new-unit"><option value="pcs">pcs</option><option value="metres">metres</option><option value="kg">kg</option><option value="box">box</option><option value="set">set</option></select></div>
         <div class="form-group"><label>HS Code (Customs)</label><input id="new-hs" placeholder="e.g. 5007.20"/></div>
       </div>
@@ -1786,7 +1802,7 @@ async function loadProducts() {
     // Rebuild category filter from real product data
     const catSel = document.getElementById('prod-cat-filter');
     if(catSel) {
-      const cats = [...new Set(Object.values(PRODUCTS).map(p=>p.category).filter(Boolean))].sort();
+      const cats = [...new Set(Object.values(PRODUCTS).map(p=>p.category||guessCategoryFromName(p.name)).filter(Boolean))].sort();
       const cur = catSel.value;
       catSel.innerHTML = '<option value="">All Categories</option>' +
         cats.map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
@@ -2096,6 +2112,7 @@ async function editProduct(id) {
   document.getElementById('new-low').value   = p.lowStock || 10;
   document.getElementById('new-vat').value   = (p.vat === 0 || p.vat > 0) ? p.vat : 20;
   document.getElementById('new-hs').value    = p.hs    || '';
+  const catEl = document.getElementById('new-category'); if(catEl) catEl.value = p.category || 'General';
   let hiddenId = document.getElementById('prod-edit-id');
   if(!hiddenId) {
     hiddenId = document.createElement('input');
@@ -2196,6 +2213,25 @@ async function loadDashboardStats() {
 
 // ─── Renderers ─────────────────────────────────────
 
+
+// ═══════════════════════════════════════════════════
+// AUTO-CATEGORISE products by name pattern
+// ═══════════════════════════════════════════════════
+function guessCategoryFromName(name) {
+  const n = (name||'').toUpperCase();
+  if(/PICKLE|PICKEL|ACHAR/.test(n))                           return 'Pickles & Chutneys';
+  if(/CHIPS|SEV|BHUJIA|NAMKEEN|CHIVDA|MIXTURE|CHEVDO|GATHIYA|CHIKKI|BHUSU|FAFDA|MAGIC|MUKHVAS|PAN MUKHWAS/.test(n)) return 'Snacks & Namkeen';
+  if(/CHIKKI|BRITTLE|CANDY|SWEET|HALWA|LADOO|BARFI|JAMUN|RASGULLA|GULAB|KHEER|MITHAI/.test(n)) return 'Sweets & Mithai';
+  if(/CANNED|TINNED|CHANA|CHICKPEA|KIDNEY BEAN|LENTIL/.test(n)) return 'Canned & Tinned';
+  if(/MASALA|SPICE|HALDI|JEERA|CORIANDER|CUMIN|TURMERIC/.test(n)) return 'Spices & Masala';
+  if(/DRINK|JUICE|SHARBAT|SQUASH|COLA/.test(n))               return 'Drinks & Beverages';
+  if(/ALMOND|CASHEW|PISTACHIO|RAISIN|KAJU|BADAM|KHAREK|DRY FRUIT/.test(n)) return 'Dry Fruits & Nuts';
+  if(/PAPAD|FRYUM/.test(n))                                   return 'Papad & Fryums';
+  if(/OIL|GHEE/.test(n))                                      return 'Oils & Ghee';
+  if(/RICE|BASMATI|GRAIN|WHEAT/.test(n))                      return 'Rice & Grains';
+  return 'General';
+}
+
 function renderProductsTable() {
   const tbody = document.getElementById('products-table');
   if(!tbody) return;
@@ -2208,10 +2244,11 @@ function renderProductsTable() {
     // Escape name for safe display only — IDs passed via data attributes
     const safeName = (p.name||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const lowStock = p.stock <= (p.lowStock||10);
+    const displayCat = p.category || guessCategoryFromName(p.name);
     return `<tr>
       <td class="mono">${p.sku||''}</td>
       <td><strong>${safeName}</strong><br><span style="font-size:11px;color:var(--text-light)">Unit: ${p.unit||'pcs'}${p.hs?' · HS: '+p.hs:''}</span></td>
-      <td><span class="tag">${p.category||'General'}</span></td>
+      <td><span class="tag">${displayCat}</span></td>
       <td style="color:${lowStock?'var(--warning)':'var(--text)'};font-weight:${lowStock?'600':'400'}">${p.stock||0} ${p.unit||'pcs'}</td>
       <td class="mono">£${(p.landed||0).toFixed(2)}</td>
       <td class="mono">£${(p.defaultPrice||0).toFixed(2)}</td>
@@ -2286,7 +2323,9 @@ async function saveInvoice(status = 'DRAFT') {
     const price = parseFloat(document.getElementById('price_'+lid)?.value||0);
     const disc  = parseFloat(document.getElementById('disc_'+lid)?.value||0);
     if(!qty && !desc) return;
-    const vatVal  = pid && PRODUCTS[pid] ? ((PRODUCTS[pid].vat===0||PRODUCTS[pid].vat>0)?PRODUCTS[pid].vat:20) : 20;
+    const vatSel = document.getElementById('vat_'+lid);
+    const vatVal = vatSel ? parseFloat(vatSel.value) :
+                   (pid && PRODUCTS[pid] ? ((PRODUCTS[pid].vat===0||PRODUCTS[pid].vat>0)?PRODUCTS[pid].vat:20) : 20);
     const lineSub = qty * price * (1 - disc/100);
     const lineVat = lineSub * vatVal / 100;
     subtotal += lineSub; vatTotal += lineVat;
@@ -2312,7 +2351,6 @@ async function saveInvoice(status = 'DRAFT') {
       invoice_number: invNum, customer_id: currentCustomerId, status,
       invoice_date: document.getElementById('inv-date')?.value || new Date().toISOString().split('T')[0],
       due_date: document.getElementById('inv-due')?.value || null,
-      delivery_date: document.getElementById('inv-delivery')?.value || null,
       notes: document.getElementById('inv-notes')?.value || null,
       subtotal_gbp: subtotal, vat_total_gbp: vatTotal,
       total_gbp: subtotal + vatTotal, amount_paid_gbp: 0,
@@ -2343,53 +2381,68 @@ async function saveInvoice(status = 'DRAFT') {
 
 
 async function saveProduct() {
-  const sku   = document.getElementById('new-sku')?.value?.trim();
-  const name  = document.getElementById('new-name')?.value?.trim();
-  const unit  = document.getElementById('new-unit')?.value||'pcs';
-  const price = parseFloat(document.getElementById('new-price')?.value||0);
-  const vatRaw= document.getElementById('new-vat')?.value;
-  const vat   = (vatRaw!==undefined&&vatRaw!=='') ? parseFloat(vatRaw) : 20;
-  const stock = parseFloat(document.getElementById('new-stock')?.value||0);
-  const hs    = document.getElementById('new-hs')?.value?.trim()||null;
-  const low   = parseFloat(document.getElementById('new-low')?.value||10);
-  const editId= document.getElementById('prod-edit-id')?.value;
-  if(!sku||!name) { showToast('SKU and Name are required'); return; }
-  const vatType = vat===0?'ZERO':vat===5?'REDUCED':'STANDARD';
+  const sku      = document.getElementById('new-sku')?.value?.trim();
+  const name     = document.getElementById('new-name')?.value?.trim();
+  const unit     = document.getElementById('new-unit')?.value || 'pcs';
+  const price    = parseFloat(document.getElementById('new-price')?.value || 0);
+  const vatRaw   = document.getElementById('new-vat')?.value;
+  const vat      = (vatRaw !== undefined && vatRaw !== '') ? parseFloat(vatRaw) : 20;
+  const stock    = parseFloat(document.getElementById('new-stock')?.value || 0);
+  const hs       = document.getElementById('new-hs')?.value?.trim() || null;
+  const low      = parseFloat(document.getElementById('new-low')?.value || 10);
+  const category = document.getElementById('new-category')?.value || 'General';
+  const editId   = document.getElementById('prod-edit-id')?.value;
+
+  if(!sku || !name) { showToast('SKU and Name are required'); return; }
+  const vatType = vat === 0 ? 'ZERO' : vat === 5 ? 'REDUCED' : 'STANDARD';
 
   try {
     let prod;
     if(editId) {
-      const data = await sbPatch('products',{
-        sku,name,unit,default_sell_price_gbp:price||null,
-        vat_type:vatType,vat_rate:vat,hs_code:hs,
-        low_stock_threshold:low,country_of_origin:'India',is_active:true
-      },'id',editId);
-      prod = Array.isArray(data)?data[0]:data;
+      const data = await sbPatch('products', {
+        sku, name, unit,
+        default_sell_price_gbp: price || null,
+        vat_type: vatType, vat_rate: vat,
+        hs_code: hs, low_stock_threshold: low,
+        country_of_origin: 'India', is_active: true
+      }, 'id', editId);
+      prod = Array.isArray(data) ? data[0] : data;
     } else {
-      const data = await sbPost('products',{
-        sku,name,unit,default_sell_price_gbp:price||null,
-        vat_type:vatType,vat_rate:vat,stock_qty:stock,
-        hs_code:hs,low_stock_threshold:low,
-        country_of_origin:'India',is_active:true
+      const data = await sbPost('products', {
+        sku, name, unit,
+        default_sell_price_gbp: price || null,
+        vat_type: vatType, vat_rate: vat,
+        stock_qty: stock, hs_code: hs,
+        low_stock_threshold: low,
+        country_of_origin: 'India', is_active: true
       });
-      prod = Array.isArray(data)?data[0]:data;
-      if(prod?.id && stock>0) {
-        await sbPost('stock_movements',{product_id:prod.id,movement_type:'OPENING',qty:stock,stock_after:stock});
+      prod = Array.isArray(data) ? data[0] : data;
+      if(prod?.id && stock > 0) {
+        await sbPost('stock_movements', {
+          product_id: prod.id, movement_type: 'OPENING',
+          qty: stock, stock_after: stock
+        });
       }
     }
+
     if(prod?.id) {
-      PRODUCTS[prod.id]={id:prod.id,sku,name,unit,defaultPrice:price,
-        vat,landed:parseFloat(prod.avg_landed_cost_gbp||0),
-        stock:parseFloat(prod.stock_qty||stock),lowStock:low,hs:hs||'',barcode:'',category:''};
+      PRODUCTS[prod.id] = {
+        id: prod.id, sku, name, unit,
+        defaultPrice: price, vat, category,
+        landed: parseFloat(prod.avg_landed_cost_gbp || 0),
+        stock: parseFloat(prod.stock_qty || stock),
+        lowStock: low, hs: hs || '', barcode: ''
+      };
     }
-    showToast(editId?'✓ Product updated':'✓ Product added: '+sku);
-    const hi=document.getElementById('prod-edit-id'); if(hi) hi.value='';
+
+    showToast(editId ? '✓ Product updated: ' + sku : '✓ Product added: ' + sku);
+    const hi = document.getElementById('prod-edit-id'); if(hi) hi.value = '';
     closeModal('modal-product');
     renderProductsTable();
     loadProducts();
   } catch(e) {
-    showToast('Error saving product: '+e.message);
-    console.error('saveProduct:',e);
+    showToast('Error saving product: ' + e.message);
+    console.error('saveProduct:', e);
   }
 }
 
@@ -3270,11 +3323,9 @@ async function saveInvoiceEdit() {
 
   // Update invoice header
   await sbPatch('invoices',{
-    status:finalStatus, invoice_date:invDate, due_date:dueDate,
-    delivery_date:delivery||null, notes,
+    status:finalStatus, invoice_date:invDate, due_date:dueDate, notes,
     subtotal_gbp:sub, vat_total_gbp:vatAmt, total_gbp:total, amount_paid_gbp:paid
-  }).eq('id',id);
-  if(error) { showToast('Error: '+error.message); return; }
+  }, 'id', id);
 
   // Replace all line items
   await fetch(SUPABASE_URL+'/rest/v1/invoice_lines?invoice_id=eq.'+id,{method:'DELETE',headers:{'apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON}});
@@ -3957,10 +4008,8 @@ function onCustomerChange(sel) {
   });
 }
 
-function addInvoiceLine() {
-  if(!currentCustomerId) {
-    showToast('Please select a customer first'); return;
-  }
+function addInvoiceLine(prefill) {
+  if(!currentCustomerId && !prefill) { showToast('Please select a customer first'); return; }
   lineCounter++;
   const id = 'line_' + lineCounter;
   const container = document.getElementById('inv-lines');
@@ -3968,22 +4017,42 @@ function addInvoiceLine() {
   const wrap = document.createElement('div');
   wrap.className = 'line-row-wrap inv-line-row';
   wrap.dataset.lineId = id;
-  wrap.dataset.product = '';
+  wrap.dataset.product = prefill?.product_id || '';
+
+  // Filter out demo items from product options
+  const realInvProds = Object.entries(PRODUCTS).filter(([k]) => !k.startsWith('DEMO-'));
+  const prodOpts = realInvProds.map(([k,v]) =>
+    `<option value="${k}" ${prefill?.product_id===k?'selected':''}>${v.name} (${v.sku})</option>`
+  ).join('');
+
+  // Determine VAT for this line
+  let prefillVat = 20;
+  if(prefill?.vat_rate !== undefined) prefillVat = prefill.vat_rate;
+  else if(prefill?.product_id && PRODUCTS[prefill.product_id]) {
+    const p = PRODUCTS[prefill.product_id];
+    prefillVat = (p.vat===0||p.vat>0) ? p.vat : 20;
+  }
 
   wrap.innerHTML = `
     <div class="line-row" id="row_${id}">
-      <select onchange="onProductSelect('${id}', this)" style="font-size:13px">
+      <select id="psel_${id}" onchange="onProductSelect('${id}', this)" style="font-size:13px">
         <option value="">— Select product —</option>
-        ${Object.entries(PRODUCTS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')}
+        <option value="__new__">✚ Add new product…</option>
+        ${prodOpts}
       </select>
-      <input type="number" value="1" min="1" id="qty_${id}" onchange="recalcLine('${id}')" style="width:100%"/>
+      <input type="number" value="${prefill?.qty||1}" min="0.01" id="qty_${id}" onchange="recalcLine('${id}')" style="width:100%"/>
       <div style="position:relative">
-        <input type="number" id="price_${id}" step="0.01" onchange="onManualPrice('${id}')" style="width:100%;padding-right:4px"/>
+        <input type="number" id="price_${id}" step="0.01" value="${prefill?.unit_price_gbp||''}" onchange="onManualPrice('${id}')" style="width:100%;padding-right:4px"/>
       </div>
-      <input type="number" value="0" min="0" max="100" id="disc_${id}" onchange="recalcLine('${id}')" style="width:100%"/>
-      <span id="vat_${id}" class="mono" style="font-size:12px">20%</span>
-      <span id="total_${id}" class="mono" style="font-size:13px;font-weight:600">£0.00</span>
-      <button onclick="removeLine('${id}')" style="background:var(--danger-bg);border:1px solid #fecaca;border-radius:6px;width:30px;height:30px;cursor:pointer;color:var(--danger);font-size:14px;line-height:1">✕</button>
+      <input type="number" value="${prefill?.discount_pct||0}" min="0" max="100" id="disc_${id}" onchange="recalcLine('${id}')" style="width:100%"/>
+      <select id="vat_${id}" onchange="recalcLine('${id}')" style="font-size:12px;width:60px">
+        <option value="0"  ${prefillVat===0 ?'selected':''}>0%</option>
+        <option value="20" ${prefillVat===20?'selected':''}>20%</option>
+        <option value="5"  ${prefillVat===5 ?'selected':''}>5%</option>
+      </select>
+      <span id="linetotal_${id}" class="mono" style="font-size:13px;font-weight:600">£0.00</span>
+      <button onclick="this.closest('.line-row-wrap').remove();recalcInvoice()"
+        style="background:none;border:1px solid #fecaca;border-radius:6px;width:30px;height:30px;cursor:pointer;color:var(--danger);font-size:14px;line-height:1">✕</button>
     </div>
     <div class="line-meta" id="meta_${id}">
       <span style="font-size:11.5px;color:var(--text-light)">← Select a product to see smart pricing</span>
@@ -3991,16 +4060,35 @@ function addInvoiceLine() {
     <div class="price-alert" id="alert_${id}"></div>
   `;
   container.appendChild(wrap);
+  if(prefill?.product_id) onProductSelect(id, document.getElementById('psel_'+id));
+  recalcLine(id);
 }
 
+
 function onProductSelect(lineId, sel) {
-  const productId = sel.value;
-  if(productId === '__new__') { sel.value = ''; openQuickAddProduct(lineId); return; }
-  const wrap = document.querySelector(`[data-line-id="${lineId}"]`);
-  wrap.dataset.product = productId;
+  const productId = sel ? sel.value : (document.getElementById('psel_'+lineId)?.value || '');
+  if(productId === '__new__') {
+    if(sel) sel.value = '';
+    openQuickAddProduct(lineId);
+    return;
+  }
+  const row = document.querySelector('[data-line-id="'+lineId+'"]');
+  if(row) row.dataset.product = productId || '';
   if(!productId) return;
+  const p = PRODUCTS[productId];
+  if(!p) return;
+
+  // Set VAT from product — critical for 0% food items
+  const vatSel = document.getElementById('vat_'+lineId);
+  if(vatSel) {
+    const pVat = (p.vat===0||p.vat>0) ? p.vat : 20;
+    vatSel.value = String(pVat);
+  }
+
   refreshLinePrice(lineId, productId);
+  recalcLine(lineId);
 }
+
 
 function refreshLinePrice(lineId, productId) {
   if(!currentCustomerId || !productId) return;
@@ -4071,16 +4159,15 @@ function recalcLine(lineId) {
   const qty   = parseFloat(document.getElementById(`qty_${lineId}`)?.value   || 0);
   const price = parseFloat(document.getElementById(`price_${lineId}`)?.value || 0);
   const disc  = parseFloat(document.getElementById(`disc_${lineId}`)?.value  || 0);
-  const wrap  = document.querySelector(`[data-line-id="${lineId}"]`);
-  const pid   = wrap?.dataset.product;
-  const vat   = (PRODUCTS[pid]?.vat===0||PRODUCTS[pid]?.vat>0)?PRODUCTS[pid].vat:20;
-
+  const vatEl = document.getElementById('vat_'+lineId);
+  const vat   = vatEl ? parseFloat(vatEl.value ?? 20) : 20;
   const sub   = qty * price * (1 - disc/100);
-  const total = sub * (1 + vat/100);
-  const el    = document.getElementById(`total_${lineId}`);
+  const total = sub + sub * vat / 100;
+  const el = document.getElementById('linetotal_'+lineId);
   if(el) el.textContent = '£' + total.toFixed(2);
-  updateTotals();
+  recalcInvoice();
 }
+
 
 function removeLine(lineId) {
   const wrap = document.querySelector(`[data-line-id="${lineId}"]`);
@@ -4205,6 +4292,8 @@ function showPage(name) {
 }
 
 function openNewInvoice() {
+  const realProducts = Object.values(PRODUCTS).filter(p => !p.id.startsWith('DEMO-'));
+  if(realProducts.length === 0) loadProducts();
   currentCustomerId = null;
   lineCounter = 0;
   document.getElementById('inv-lines').innerHTML = '';
@@ -5970,10 +6059,11 @@ function addPOLine(prefill) {
   const currency = document.getElementById('po-currency')?.value || 'INR';
   const symbol   = currency === 'USD' ? '$' : currency === 'GBP' ? '£' : '₹';
 
-  // Build product options from PRODUCTS cache
-  const prodOpts = Object.entries(PRODUCTS).map(([k,v]) =>
-    `<option value="${k}" ${prefill?.product_id===k?'selected':''}>${v.name} (${v.sku})</option>`
-  ).join('');
+  // Build product options from PRODUCTS cache (filter out demo items)
+  const realProds = Object.entries(PRODUCTS).filter(([k]) => !k.startsWith('DEMO-'));
+  const prodOpts = realProds.length > 0
+    ? realProds.map(([k,v]) => `<option value="${k}" ${prefill?.product_id===k?'selected':''}>${v.name} (${v.sku})</option>`).join('')
+    : '<option value="" disabled>Loading products — please wait…</option>';
 
   const div = document.createElement('div');
   div.id = 'pnlwrap_' + id;
@@ -6045,6 +6135,17 @@ function getPONewLines() {
       name: pid ? PRODUCTS[pid]?.name||'' : '' });
   });
   return lines;
+}
+
+function openNewPO() {
+  resetPOModal();
+  // Reload products if cache empty or only has demo items
+  const realProducts = Object.values(PRODUCTS).filter(p => !p.id.startsWith('DEMO-'));
+  if(realProducts.length === 0) {
+    loadProducts();
+  }
+  setTimeout(() => autoFillExchangeRate(), 300);
+  showModal('modal-po');
 }
 
 function resetPOModal() {
