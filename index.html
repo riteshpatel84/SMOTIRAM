@@ -4494,6 +4494,8 @@ function showPage(name) {
     var oc = n.getAttribute('onclick')||'';
     n.classList.toggle('active', oc.indexOf("showPage('"+name+"')")!==-1);
   });
+  // Close mobile nav when page selected
+  if(window.innerWidth <= 768) closeMobileNav();
   if(name==='analytics'){
     ['tab-products','tab-customers','tab-suppliers','tab-receivables'].forEach(function(id,i){
       var el=document.getElementById(id); if(el) el.style.display=i===0?'block':'none';
@@ -6595,12 +6597,7 @@ function closeMobileNav() {
   document.getElementById('main-sidebar')?.classList.remove('mobile-open');
   document.getElementById('sidebar-overlay')?.classList.remove('mobile-open');
 }
-// Close nav when a page is selected on mobile
-const _origShowPage = showPage;
-function showPage(name) {
-  _origShowPage(name);
-  if(window.innerWidth <= 768) closeMobileNav();
-}
+// Mobile nav closes via closeMobileNav() called from nav items
 
 </script>
 </body>
