@@ -399,19 +399,119 @@
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
   /* ── RESPONSIVE ──────────────────────────── */
-  @media (max-width: 900px) {
-    .stats-grid { grid-template-columns: 1fr 1fr; }
-    .grid-2 { grid-template-columns: 1fr; }
-    .sidebar { transform: translateX(-100%); }
-    .main { margin-left: 0; }
+
+  /* Mobile hamburger button */
+  .mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 300;
+    background: var(--navy);
+    border: none;
+    border-radius: 8px;
+    width: 40px; height: 40px;
+    cursor: pointer;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-shadow: var(--shadow);
   }
+  .mobile-menu-btn span {
+    display: block;
+    width: 20px; height: 2px;
+    background: #fff;
+    border-radius: 2px;
+    transition: all .25s;
+  }
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 150;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-menu-btn { display: flex; }
+
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform .25s ease;
+      z-index: 200;
+    }
+    .sidebar.mobile-open {
+      transform: translateX(0);
+    }
+    .sidebar-overlay.mobile-open { display: block; }
+
+    .main {
+      margin-left: 0;
+    }
+    .topbar {
+      padding-left: 60px;
+    }
+    .topbar-title { font-size: 16px; }
+
+    .content { padding: 16px; }
+
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-value { font-size: 22px; }
+
+    .grid-2 { grid-template-columns: 1fr; gap: 12px; }
+    .grid-3 { grid-template-columns: 1fr; gap: 12px; }
+
+    /* Tables scroll horizontally */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 600px; }
+    th, td { padding: 9px 10px; font-size: 12px; }
+
+    /* Modals full screen on mobile */
+    .modal-overlay { align-items: flex-end; }
+    .modal {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 16px 16px 0 0;
+      max-height: 92vh;
+    }
+    .modal-header { padding: 16px 18px 12px; }
+    .modal-body { padding: 16px 18px; }
+    .modal-footer { padding: 12px 18px; flex-wrap: wrap; }
+
+    /* Forms stack on mobile */
+    .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
+
+    /* Invoice line items compact */
+    .line-row { display: flex; flex-direction: column; gap: 8px; }
+    .line-row > * { width: 100% !important; }
+
+    /* Topbar actions wrap */
+    .topbar-actions { gap: 4px; }
+    .topbar-actions .btn { padding: 6px 10px; font-size: 12px; }
+
+    /* Search bar full width */
+    .search-bar { flex-direction: column; }
+    .search-wrap { width: 100%; }
+
+    /* PO section */
+    .po-grid { grid-template-columns: 1fr 1fr; }
+
+    /* Stats grid single on very small */
+    @media (max-width: 400px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+  }
+
 
 </style>
 </head>
 <body>
 
 <!-- SIDEBAR -->
-<nav class="sidebar">
+<button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Menu">
+  <span></span><span></span><span></span>
+</button>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileNav()"></div>
+<nav class="sidebar" id="main-sidebar">
   <div class="sidebar-brand">
     <div class="logo-area">
       <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><img id="sidebar-logo-img" src="" style="width:38px;height:38px;object-fit:contain;border-radius:4px" onerror=""/></div>
@@ -2425,9 +2525,15 @@ async function saveInvoice(status = 'DRAFT') {
     const lineVat = lineSub * vatVal / 100;
     subtotal += lineSub; vatTotal += lineVat;
     lines.push({
-      product_id: pid||null, line_number: lines.length+1,
-      description: desc, qty, unit_price_gbp: price,
-      discount_pct: disc, vat_rate: vatVal
+      product_id:     pid || null,
+      line_number:    lines.length + 1,
+      description:    desc,
+      qty,
+      unit_price_gbp: price,
+      discount_pct:   disc,
+      discount_gbp:   0,
+      vat_rate:       vatVal,
+      vat_type:       vatVal === 0 ? 'ZERO' : vatVal === 5 ? 'REDUCED' : 'STANDARD'
     });
   });
   if(!lines.length) { showToast('Add at least one product line'); return null; }
@@ -3411,9 +3517,13 @@ async function saveInvoiceEdit() {
     const pid   = document.getElementById('elpid_'+lid)?.value||null;
     const lineSub = qty * price * (1-disc/100);
     sub += lineSub; vatAmt += lineSub * vat/100;
-    newLines.push({ invoice_id:id, line_number:lineNum++, description:name,
-      product_id:pid||null, qty, unit_price_gbp:price, discount_pct:disc,
-      vat_rate:vat });
+    newLines.push({
+      invoice_id:id, line_number:lineNum++, description:name,
+      product_id:pid||null, qty, unit_price_gbp:price,
+      discount_pct:disc, discount_gbp:0,
+      vat_rate:vat,
+      vat_type: vat===0?'ZERO':vat===5?'REDUCED':'STANDARD'
+    });
   });
   const total = sub + vatAmt;
 
@@ -3616,14 +3726,15 @@ async function saveQuickInvoice() {
     sub += lineSub;
     vatAmt += lineSub * vat / 100;
     lines.push({
-      line_number: lineNum++,
-      description: name,
-      product_id: pid || null,
+      line_number:    lineNum++,
+      description:    name,
+      product_id:     pid || null,
       qty,
       unit_price_gbp: price,
-      discount_pct: 0,
-      vat_rate: vat,
-      // line_total_gbp is GENERATED by DB
+      discount_pct:   0,
+      discount_gbp:   0,
+      vat_rate:       vat,
+      vat_type:       vat === 0 ? 'ZERO' : vat === 5 ? 'REDUCED' : 'STANDARD'
     });
   });
 
@@ -6465,6 +6576,32 @@ function filterProductsByCategory(cat) {
     row.style.display = match ? '' : 'none';
   });
 }
+
+// ── MOBILE NAVIGATION ───────────────────────────────
+function toggleMobileNav() {
+  const sidebar = document.getElementById('main-sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const btn     = document.getElementById('mobile-menu-btn');
+  const isOpen  = sidebar.classList.contains('mobile-open');
+  if(isOpen) {
+    sidebar.classList.remove('mobile-open');
+    overlay.classList.remove('mobile-open');
+  } else {
+    sidebar.classList.add('mobile-open');
+    overlay.classList.add('mobile-open');
+  }
+}
+function closeMobileNav() {
+  document.getElementById('main-sidebar')?.classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay')?.classList.remove('mobile-open');
+}
+// Close nav when a page is selected on mobile
+const _origShowPage = showPage;
+function showPage(name) {
+  _origShowPage(name);
+  if(window.innerWidth <= 768) closeMobileNav();
+}
+
 </script>
 </body>
 <!-- v20260423-102130 -->
