@@ -502,11 +502,94 @@
   }
 
 
+
+  /* ── LOGIN SCREEN ──────────────────────────── */
+  #login-screen {
+    position: fixed; inset: 0;
+    background: var(--navy);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  #login-screen .login-box {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 40px 44px;
+    width: 340px;
+    text-align: center;
+  }
+  #login-screen .login-logo {
+    width: 60px; height: 60px;
+    background: rgba(212,168,67,0.15);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    margin: 0 auto 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-serif); font-size: 22px; color: var(--gold);
+  }
+  #login-screen h2 {
+    font-family: var(--font-serif);
+    color: #fff; font-size: 20px; margin-bottom: 4px;
+  }
+  #login-screen p {
+    color: rgba(255,255,255,0.45); font-size: 12.5px; margin-bottom: 28px;
+  }
+  #login-screen input[type="password"] {
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.15);
+    color: #fff; text-align: center;
+    font-size: 28px; letter-spacing: 6px;
+    border-radius: 10px; padding: 12px;
+    width: 100%; margin-bottom: 16px;
+    font-family: var(--font-mono);
+  }
+  #login-screen input[type="password"]:focus {
+    border-color: var(--gold);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(212,168,67,0.2);
+  }
+  #login-screen input[type="password"]::placeholder { color: rgba(255,255,255,0.2); letter-spacing:2px; }
+  #login-screen .login-btn {
+    width: 100%; padding: 12px;
+    background: var(--gold); color: var(--navy);
+    border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: var(--font);
+    transition: background .15s;
+  }
+  #login-screen .login-btn:hover { background: var(--gold-light); }
+  #login-screen .login-error {
+    color: #f87171; font-size: 12px;
+    margin-top: 10px; min-height: 18px;
+  }
+  #login-screen .login-hint {
+    color: rgba(255,255,255,0.25);
+    font-size: 11px; margin-top: 20px;
+  }
+
 </style>
 </head>
 <body>
 
 <!-- SIDEBAR -->
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">S</div>
+    <h2>S MOTIRAM (UK) LTD</h2>
+    <p>Enter your access PIN to continue</p>
+    <input type="password" id="login-pin" maxlength="8" placeholder="••••"
+      onkeydown="if(event.key==='Enter') checkLogin()"
+      oninput="document.getElementById('login-error').textContent=''"
+      autofocus/>
+    <button class="login-btn" onclick="checkLogin()">Access System</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-hint">S MOTIRAM (UK) LIMITED · Billing System</div>
+  </div>
+</div>
+
 <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleMobileNav()" aria-label="Menu">
   <span></span><span></span><span></span>
 </button>
@@ -6095,47 +6178,82 @@ async function initCalendar() {
 
 async function showCalendarRate() {
   const statusEl = document.getElementById('cal-holiday-status');
-  if(!statusEl) return;
+  const today = new Date().toISOString().split('T')[0];
+
+  // Try Frankfurter API first
   try {
-    const today = new Date().toISOString().split('T')[0];
-    // First check _calRates
-    const rates = window._calRates || {};
-    if(rates[today]) {
-      const r = rates[today];
-      const parts = [];
-      if(r.INR) parts.push('£1 = ₹' + r.INR);
-      if(r.USD) parts.push('£1 = $' + r.USD);
-      if(parts.length) {
-        statusEl.textContent = 'Today: ' + parts.join(' · ');
-        statusEl.style.color = 'var(--info)';
+    const resp = await fetch('https://api.frankfurter.app/latest?from=GBP&to=INR,USD', {
+      method: 'GET',
+      headers: {'Accept': 'application/json'}
+    });
+    if(resp.ok) {
+      const data = await resp.json();
+      const inr = data.rates?.INR;
+      const usd = data.rates?.USD;
+      if(inr || usd) {
+        const parts = [];
+        if(inr) parts.push('£1 = ₹' + inr.toFixed(2));
+        if(usd) parts.push('£1 = $' + usd.toFixed(4));
+        const rateStr = 'Live rate: ' + parts.join(' · ');
+        if(statusEl) {
+          statusEl.textContent = rateStr;
+          statusEl.style.color = '#2563eb';
+          statusEl.style.fontWeight = '600';
+        }
+        // Update _calRates for today's cell
+        if(!window._calRates) window._calRates = {};
+        window._calRates[today] = {
+          INR: inr ? inr.toFixed(2) : null,
+          USD: usd ? usd.toFixed(4) : null
+        };
+        // Save to Supabase
+        try {
+          const saves = [];
+          if(inr) saves.push({from_currency:'INR',to_currency:'GBP',rate:1/inr,rate_date:today,source:'FRANKFURTER_API'});
+          if(usd) saves.push({from_currency:'USD',to_currency:'GBP',rate:1/usd,rate_date:today,source:'FRANKFURTER_API'});
+          if(saves.length) {
+            fetch(SUPABASE_URL+'/rest/v1/exchange_rates', {
+              method:'POST',
+              headers:{'apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+              body:JSON.stringify(saves)
+            });
+          }
+        } catch(e) {}
+        renderCalendar();
         return;
       }
     }
-    // Fetch live if not in cache
-    const resp = await fetch('https://api.frankfurter.app/latest?from=GBP&to=INR,USD');
-    if(resp.ok) {
-      const data = await resp.json();
+  } catch(e) {
+    console.warn('Frankfurter fetch failed:', e.message);
+  }
+
+  // Fallback: try loading from Supabase DB
+  try {
+    const dbRates = await sbGet('exchange_rates', {
+      select: 'from_currency,rate,rate_date',
+      filters: [{col:'to_currency',op:'eq',val:'GBP'},{col:'rate_date',op:'lte',val:today}],
+      order: 'rate_date.desc',
+      limit: 4
+    });
+    if(dbRates && dbRates.length) {
+      const inrRow = dbRates.find(r => r.from_currency === 'INR');
+      const usdRow = dbRates.find(r => r.from_currency === 'USD');
       const parts = [];
-      if(data.rates?.INR) parts.push('£1 = ₹' + data.rates.INR.toFixed(2));
-      if(data.rates?.USD) parts.push('£1 = $' + data.rates.USD.toFixed(4));
-      statusEl.textContent = 'Today: ' + parts.join(' · ');
-      statusEl.style.color = 'var(--info)';
-      // Also update _calRates so cell shows it
-      if(!window._calRates) window._calRates = {};
-      window._calRates[today] = {};
-      if(data.rates?.INR) window._calRates[today].INR = data.rates.INR.toFixed(2);
-      if(data.rates?.USD) window._calRates[today].USD = data.rates.USD.toFixed(4);
-      renderCalendar();
-    } else {
-      statusEl.textContent = 'Rate unavailable';
+      if(inrRow) { const r = (1/inrRow.rate).toFixed(2); parts.push('£1 = ₹'+r); if(!window._calRates) window._calRates={}; if(!window._calRates[inrRow.rate_date]) window._calRates[inrRow.rate_date]={}; window._calRates[inrRow.rate_date].INR = r; }
+      if(usdRow) { const r = (1/usdRow.rate).toFixed(4); parts.push('£1 = $'+r); if(!window._calRates) window._calRates={}; if(!window._calRates[usdRow.rate_date]) window._calRates[usdRow.rate_date]={}; window._calRates[usdRow.rate_date].USD = r; }
+      if(parts.length && statusEl) {
+        statusEl.textContent = 'Last saved: ' + parts.join(' · ');
+        statusEl.style.color = '#64748b';
+      }
+      if(parts.length) renderCalendar();
+    } else if(statusEl) {
+      statusEl.textContent = 'Rate unavailable — check internet';
+      statusEl.style.color = 'var(--warning)';
     }
   } catch(e) {
-    const statusEl2 = document.getElementById('cal-holiday-status');
-    if(statusEl2) statusEl2.textContent = 'Rate fetch failed';
-    console.warn('Calendar rate:', e);
+    if(statusEl) statusEl.textContent = 'Rate fetch failed';
   }
 }
-
 
 
 // ═══════════════════════════════════════════════════
@@ -6598,6 +6716,46 @@ function closeMobileNav() {
   document.getElementById('sidebar-overlay')?.classList.remove('mobile-open');
 }
 // Mobile nav closes via closeMobileNav() called from nav items
+
+
+// ── LOGIN SECURITY ──────────────────────────────────
+// Change this PIN to whatever you want
+const ACCESS_PIN = '2477'; // Change this to your PIN
+
+function checkLogin() {
+  const pin = document.getElementById('login-pin')?.value;
+  const errEl = document.getElementById('login-error');
+  if(pin === ACCESS_PIN) {
+    const screen = document.getElementById('login-screen');
+    if(screen) {
+      screen.style.opacity = '0';
+      screen.style.transition = 'opacity 0.3s';
+      setTimeout(() => { screen.style.display = 'none'; }, 300);
+    }
+    // Remember login for this session
+    sessionStorage.setItem('smotiram_auth', 'true');
+  } else {
+    if(errEl) errEl.textContent = 'Incorrect PIN — try again';
+    const input = document.getElementById('login-pin');
+    if(input) { input.value = ''; input.focus(); }
+    // Shake animation
+    const box = document.querySelector('.login-box');
+    if(box) { box.style.animation = 'shake .3s'; setTimeout(() => box.style.animation='', 300); }
+  }
+}
+
+// Check if already authenticated this session
+(function() {
+  if(sessionStorage.getItem('smotiram_auth') === 'true') {
+    const screen = document.getElementById('login-screen');
+    if(screen) screen.style.display = 'none';
+  }
+})();
+
+// Shake animation
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = '@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }';
+document.head.appendChild(shakeStyle);
 
 </script>
 </body>
